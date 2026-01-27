@@ -7,9 +7,11 @@ import { ImageController } from './image.controller';
 import { PermitsController } from './permits.controller';
 import { HealthController } from './health.controller';
 import { AuditController } from './audit.controller';
+import { BuildController } from './build.controller';
 import { IngestionModule } from '../ingestion/ingestion.module';
 import { IntegrationModule } from '../integration/integration.module';
 import { AuditModule } from '../audit/audit.module';
+import { BuildModule } from '../build/build.module';
 
 @Module({
     imports: [
@@ -17,8 +19,9 @@ import { AuditModule } from '../audit/audit.module';
         IngestionModule,
         IntegrationModule,
         AuditModule,
+        BuildModule,
         TypeOrmModule.forFeature([Site, Session, Decision, Movement, Permit]),
     ],
-    controllers: [DashboardController, ImageController, PermitsController, HealthController, AuditController],
+    controllers: [DashboardController, ImageController, PermitsController, HealthController, AuditController, BuildController],
 })
 export class ApiModule { }

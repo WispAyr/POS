@@ -9,6 +9,7 @@ import { InfrastructureModule } from './infrastructure/infrastructure.module';
 import { ApiModule } from './api/api.module';
 import { IntegrationModule } from './integration/integration.module';
 import { AuditModule } from './audit/audit.module';
+import { BuildModule } from './build/build.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -38,6 +39,7 @@ import { AppController } from './app.controller';
     ApiModule,
     IntegrationModule,
     AuditModule,
+    BuildModule,
   ],
   controllers: [AppController],
 })

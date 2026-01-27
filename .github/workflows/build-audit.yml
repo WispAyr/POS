@@ -1,0 +1,58 @@
+name: Build Audit
+
+on:
+  workflow_run:
+    workflows: ["CI", "Tests", "Release"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  audit-build:
+    name: Audit Build Process
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion != 'cancelled'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup PostgreSQL
+        run: |
+          sudo systemctl start postgresql
+          sudo -u postgres psql -c "CREATE USER pos_user WITH PASSWORD 'pos_pass';"
+          sudo -u postgres psql -c "CREATE DATABASE pos_db OWNER pos_user;"
+          sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE pos_db TO pos_user;"
+
+      - name: Build application
+        run: npm run build:no-audit
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: pos_user
+          DB_PASSWORD: pos_pass
+          DB_DATABASE: pos_db
+
+      - name: Log build audit
+        run: |
+          npm run start:prod &
+          sleep 5
+          curl -X POST http://localhost:3000/api/build/audit/ci \
+            -H "Content-Type: application/json" \
+            -d "{\"workflow\": \"${{ github.event.workflow_run.name }}\", \"runId\": \"${{ github.event.workflow_run.id }}\", \"status\": \"${{ github.event.workflow_run.conclusion }}\"}" || true
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: pos_user
+          DB_PASSWORD: pos_pass
+          DB_DATABASE: pos_db
+          PORT: 3000
