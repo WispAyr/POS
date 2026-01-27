@@ -8,7 +8,13 @@ export class MondayController {
     @Post('sync')
     async triggerSync() {
         await this.mondayService.syncAll();
-        return { message: 'Sync triggered successfully' };
+        return { message: 'Full sync triggered successfully' };
+    }
+
+    @Post('permits/sync')
+    async triggerWhitelistSync() {
+        const count = await this.mondayService.syncWhitelists();
+        return { message: 'Whitelist sync completed', count };
     }
 
     @Post('cameras/setup')

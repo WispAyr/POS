@@ -1,7 +1,8 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Decision, DecisionOutcome, AuditLog } from '../../domain/entities';
+import { Decision, DecisionOutcome } from '../../domain/entities';
+import { AuditService } from '../../audit/audit.service';
 
 @Injectable()
 export class EnforcementService {
@@ -10,8 +11,7 @@ export class EnforcementService {
     constructor(
         @InjectRepository(Decision)
         private readonly decisionRepo: Repository<Decision>,
-        @InjectRepository(AuditLog)
-        private readonly auditRepo: Repository<AuditLog>,
+        private readonly auditService: AuditService,
     ) { }
 
     async getReviewQueue(siteId?: string): Promise<Decision[]> {
@@ -41,15 +41,19 @@ export class EnforcementService {
 
         await this.decisionRepo.save(decision);
 
-        // Audit Log
-        const audit = this.auditRepo.create({
-            entityType: 'DECISION',
-            entityId: decision.id,
-            action: `REVIEW_${action}`,
-            actor: operatorId,
-            details: { previousStatus, newStatus: decision.status, notes },
-        });
-        await this.auditRepo.save(audit);
+        // Get decision created audit log to link as parent
+        const decisionAudits = await this.auditService.getAuditTrailByEntity('DECISION', decision.id);
+        const decisionCreatedAuditId = decisionAudits.find(a => a.action === 'DECISION_CREATED')?.id;
+
+        // Audit Log enforcement review
+        await this.auditService.logEnforcementReview(
+            decision,
+            operatorId,
+            action,
+            notes,
+            previousStatus,
+            decisionCreatedAuditId
+        );
 
         this.logger.log(`Decision ${id} reviewed: ${action} by ${operatorId}`);
         return decision;

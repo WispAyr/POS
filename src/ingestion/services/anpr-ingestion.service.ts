@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Movement, Site } from '../../domain/entities';
 import { IngestAnprDto } from '../dto/ingest-anpr.dto';
 import { SessionService } from '../../engine/services/session.service';
+import { AuditService } from '../../audit/audit.service';
 
 @Injectable()
 export class AnprIngestionService {
@@ -15,6 +16,7 @@ export class AnprIngestionService {
         @InjectRepository(Site)
         private readonly siteRepo: Repository<Site>,
         private readonly sessionService: SessionService,
+        private readonly auditService: AuditService,
     ) { }
 
     async ingest(dto: IngestAnprDto): Promise<{ movement: Movement; isNew: boolean }> {
@@ -82,9 +84,13 @@ export class AnprIngestionService {
                 this.logger.log(`Updating images for existing movement: ${existing.id} (${vrm})`);
                 existing.images = dto.images || [];
                 const saved = await this.movementRepo.save(existing);
+                // Audit log duplicate detection
+                await this.auditService.logMovementIngestion(saved, false, undefined);
                 return { movement: saved, isNew: false };
             }
 
+            // Audit log duplicate detection (no update needed)
+            await this.auditService.logMovementIngestion(existing, false, undefined);
             return { movement: existing, isNew: false };
         }
 
@@ -103,6 +109,9 @@ export class AnprIngestionService {
 
         const saved = await this.movementRepo.save(movement);
         this.logger.log(`Ingested movement: ${saved.id} for VRM ${saved.vrm}`);
+
+        // Audit log movement ingestion (isNew = true since we just created it)
+        await this.auditService.logMovementIngestion(saved, true, undefined);
 
         // Trigger Session Processing
         await this.sessionService.processMovement(saved).catch(err => {

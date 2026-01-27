@@ -14,6 +14,7 @@ const API_BASE = 'http://localhost:3001';
 export function SettingsView() {
     const [anprSync, setAnprSync] = useState<SyncStatus>({ isRunning: false });
     const [mondaySync, setMondaySync] = useState<SyncStatus>({ isRunning: false });
+    const [mondayPermitsSync, setMondayPermitsSync] = useState<SyncStatus>({ isRunning: false });
     const [cameraSync, setCameraSync] = useState<SyncStatus>({ isRunning: false });
     const [anprHours, setAnprHours] = useState(24);
     const [syncLogs, setSyncLogs] = useState<{ time: string; msg: string; type: 'info' | 'error' | 'success' }[]>([]);
@@ -55,7 +56,7 @@ export function SettingsView() {
             }
         };
         fetchStats();
-    }, [anprSync.lastRun, mondaySync.lastRun, cameraSync.lastRun]);
+    }, [anprSync.lastRun, mondaySync.lastRun, mondayPermitsSync.lastRun, cameraSync.lastRun]);
 
     const runSync = async (
         _type: 'anpr' | 'monday' | 'cameras',
@@ -361,6 +362,14 @@ export function SettingsView() {
                     icon={Cloud}
                     status={mondaySync}
                     onSync={() => runSync('monday', setMondaySync, '/integration/monday/sync')}
+                />
+
+                <SyncCard
+                    title="Monday.com Whitelist Sync"
+                    description="Sync whitelisted VRMs and permits from Monday.com Whitelist Board"
+                    icon={Database}
+                    status={mondayPermitsSync}
+                    onSync={() => runSync('monday', setMondayPermitsSync, '/integration/monday/permits/sync')}
                 />
 
                 <SyncCard

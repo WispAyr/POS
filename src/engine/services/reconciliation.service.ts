@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Session, Decision, DecisionOutcome } from '../../domain/entities';
 import { RuleEngineService } from './rule-engine.service';
+import { AuditService } from '../../audit/audit.service';
 
 /**
  * Service for reconciling sessions when late-arriving data (payments, permits) arrives
@@ -17,16 +18,22 @@ export class ReconciliationService {
         @InjectRepository(Decision)
         private readonly decisionRepo: Repository<Decision>,
         private readonly ruleEngine: RuleEngineService,
+        private readonly auditService: AuditService,
     ) { }
 
     /**
      * Re-evaluate sessions for a VRM when new payment arrives
      */
-    async reconcilePayment(vrm: string, siteId: string, paymentStartTime: Date, paymentExpiryTime: Date): Promise<{
+    async reconcilePayment(vrm: string, siteId: string, paymentStartTime: Date, paymentExpiryTime: Date, paymentId?: string): Promise<{
         sessionsReevaluated: number;
         decisionsUpdated: number;
     }> {
         this.logger.log(`Reconciling sessions for VRM ${vrm} at site ${siteId} with payment period ${paymentStartTime} to ${paymentExpiryTime}`);
+
+        // Log reconciliation trigger
+        const reconciliationAudit = paymentId
+            ? await this.auditService.logReconciliationTrigger('PAYMENT', paymentId, vrm, siteId)
+            : undefined;
 
         // Find sessions that:
         // 1. Match VRM and site
@@ -79,10 +86,21 @@ export class ReconciliationService {
                 // Update existing decision or create new one
                 if (existingDecision.status === 'NEW' || existingDecision.status === 'CANDIDATE') {
                     // Update existing decision if not yet processed
+                    const oldDecision = { ...existingDecision };
                     existingDecision.outcome = newDecision.outcome;
                     existingDecision.ruleApplied = newDecision.ruleApplied;
                     existingDecision.rationale = `${existingDecision.rationale} | RECONCILED: ${newDecision.rationale}`;
                     await this.decisionRepo.save(existingDecision);
+
+                    // Audit log decision reconciliation
+                    await this.auditService.logDecisionReconciliation(
+                        existingDecision,
+                        oldDecision,
+                        paymentId || 'unknown',
+                        'PAYMENT',
+                        reconciliationAudit?.id
+                    );
+
                     decisionsUpdated++;
                 } else {
                     // Decision already processed, log but don't change

@@ -33,7 +33,7 @@ export class MondayIntegrationService {
         this.logger.log('Monday.com sync completed.');
     }
 
-    private async fetchBoardItems(boardId: number): Promise<MondayItem[]> {
+    private async fetchBoardItems(boardId: number): Promise<MondayItem[] | null> {
         const query = `
       query {
         boards(ids: [${boardId}]) {
@@ -63,14 +63,14 @@ export class MondayIntegrationService {
 
             if (response.data.errors) {
                 this.logger.error('GraphQL Errors', response.data.errors);
-                return [];
+                return null;
             }
 
             const boardData = response.data.data.boards[0] as MondayBoardData;
             return boardData?.items_page?.items || [];
         } catch (error) {
             this.logger.error(`Failed to fetch board ${boardId}`, error);
-            return [];
+            return null;
         }
     }
 
@@ -81,6 +81,8 @@ export class MondayIntegrationService {
         //      color_mkpjp7nb -> Status ("Active" check)
 
         const items = await this.fetchBoardItems(1893442639);
+        if (!items) return;
+
         for (const item of items) {
             const siteIdCol = item.column_values.find((c: MondayColumnValue) => c.id === 'text_mkt4k6yt');
             const statusCol = item.column_values.find((c: MondayColumnValue) => c.id === 'color_mkpjp7nb');
@@ -105,11 +107,16 @@ export class MondayIntegrationService {
         }
     }
 
-    private async syncWhitelists() {
+    async syncWhitelists() {
         // Board: Whitelists (1893468235)
         const boardId = 1893468235;
         const items = await this.fetchBoardItems(boardId);
+        if (!items) {
+            this.logger.warn(`Skipping whitelist sync as fetch failed.`);
+            return 0;
+        }
         const currentMondayIds = new Set(items.map(item => item.id));
+        let count = 0;
 
         for (const item of items) {
             const vrm = item.name?.toUpperCase().replace(/\s/g, '');
@@ -124,7 +131,7 @@ export class MondayIntegrationService {
                 });
 
                 if (!permit) {
-                    const whereCondition = siteId 
+                    const whereCondition = siteId
                         ? { vrm, siteId }
                         : { vrm, siteId: null as any };
                     permit = await this.permitRepo.findOne({
@@ -148,6 +155,7 @@ export class MondayIntegrationService {
 
                 await this.permitRepo.save(permit);
                 this.logger.debug(`Synced Permit from Monday: ${vrm} (Item ID: ${item.id})`);
+                count++;
             }
         }
 
@@ -160,6 +168,7 @@ export class MondayIntegrationService {
                 await this.permitRepo.remove(local);
             }
         }
+        return count;
     }
 
     async pushPermitToMonday(permit: Permit) {
@@ -386,6 +395,7 @@ export class MondayIntegrationService {
         this.logger.log(`Syncing camera configs from board ${boardId}...`);
 
         const items = await this.fetchBoardItems(parseInt(boardId, 10));
+        if (!items) return { count: 0 };
 
         for (const item of items) {
             // Map columns from existing board structure

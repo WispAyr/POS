@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { Session, Movement, SessionStatus } from '../../domain/entities';
 import { RuleEngineService } from './rule-engine.service';
+import { AuditService } from '../../audit/audit.service';
 
 @Injectable()
 export class SessionService {
@@ -14,6 +15,7 @@ export class SessionService {
         @InjectRepository(Movement)
         private readonly movementRepo: Repository<Movement>,
         private readonly ruleEngine: RuleEngineService,
+        private readonly auditService: AuditService,
     ) { }
 
     async processMovement(movement: Movement): Promise<void> {
@@ -37,8 +39,15 @@ export class SessionService {
             status: SessionStatus.PROVISIONAL,
         });
 
-        await this.sessionRepo.save(session);
-        this.logger.log(`Created new session ${session.id} for VRM ${session.vrm}`);
+        const savedSession = await this.sessionRepo.save(session);
+        this.logger.log(`Created new session ${savedSession.id} for VRM ${savedSession.vrm}`);
+
+        // Get movement audit log to link as parent
+        const movementAudits = await this.auditService.getAuditTrailByEntity('MOVEMENT', movement.id);
+        const movementAuditId = movementAudits.length > 0 ? movementAudits[0].id : undefined;
+
+        // Audit log session creation
+        await this.auditService.logSessionCreation(savedSession, movement, movementAuditId);
     }
 
     private async handleExit(movement: Movement) {
@@ -59,6 +68,20 @@ export class SessionService {
 
             const savedSession = await this.sessionRepo.save(openSession);
             this.logger.log(`Closed session ${savedSession.id}. Duration: ${savedSession.durationMinutes} min`);
+
+            // Get audit logs for linking
+            const sessionAudits = await this.auditService.getAuditTrailByEntity('SESSION', savedSession.id);
+            const sessionCreatedAuditId = sessionAudits.find(a => a.action === 'SESSION_CREATED')?.id;
+            const exitAudits = await this.auditService.getAuditTrailByEntity('MOVEMENT', movement.id);
+            const exitAuditId = exitAudits.length > 0 ? exitAudits[0].id : undefined;
+
+            // Audit log session completion
+            const sessionCompletedAudit = await this.auditService.logSessionCompletion(
+                savedSession,
+                movement,
+                sessionCreatedAuditId,
+                exitAuditId
+            );
 
             // Trigger Rule Evaluation
             await this.ruleEngine.evaluateSession(savedSession).catch(err => {

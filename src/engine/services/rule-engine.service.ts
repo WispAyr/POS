@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { Session, Decision, DecisionOutcome, Payment, Permit, Site } from '../../domain/entities';
+import { AuditService } from '../../audit/audit.service';
 
 @Injectable()
 export class RuleEngineService {
@@ -16,6 +17,7 @@ export class RuleEngineService {
         private readonly permitRepo: Repository<Permit>,
         @InjectRepository(Site)
         private readonly siteRepo: Repository<Site>,
+        private readonly auditService: AuditService,
     ) { }
 
     async evaluateSession(session: Session): Promise<Decision> {
@@ -88,6 +90,15 @@ export class RuleEngineService {
             ruleApplied: rule,
             rationale,
         });
-        return this.decisionRepo.save(decision);
+        const savedDecision = await this.decisionRepo.save(decision);
+
+        // Get session completed audit log to link as parent
+        const sessionAudits = await this.auditService.getAuditTrailByEntity('SESSION', session.id);
+        const sessionCompletedAuditId = sessionAudits.find(a => a.action === 'SESSION_COMPLETED')?.id;
+
+        // Audit log decision creation
+        await this.auditService.logDecisionCreation(savedDecision, session, sessionCompletedAuditId);
+
+        return savedDecision;
     }
 }

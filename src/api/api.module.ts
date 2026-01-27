@@ -6,16 +6,19 @@ import { DashboardController } from './dashboard.controller';
 import { ImageController } from './image.controller';
 import { PermitsController } from './permits.controller';
 import { HealthController } from './health.controller';
+import { AuditController } from './audit.controller';
 import { IngestionModule } from '../ingestion/ingestion.module';
 import { IntegrationModule } from '../integration/integration.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
     imports: [
         DomainModule,
         IngestionModule,
         IntegrationModule,
+        AuditModule,
         TypeOrmModule.forFeature([Site, Session, Decision, Movement, Permit]),
     ],
-    controllers: [DashboardController, ImageController, PermitsController, HealthController],
+    controllers: [DashboardController, ImageController, PermitsController, HealthController, AuditController],
 })
 export class ApiModule { }
