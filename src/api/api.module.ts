@@ -7,11 +7,13 @@ import { ImageController } from './image.controller';
 import { PermitsController } from './permits.controller';
 import { HealthController } from './health.controller';
 import { IngestionModule } from '../ingestion/ingestion.module';
+import { IntegrationModule } from '../integration/integration.module';
 
 @Module({
     imports: [
         DomainModule,
         IngestionModule,
+        IntegrationModule,
         TypeOrmModule.forFeature([Site, Session, Decision, Movement, Permit]),
     ],
     controllers: [DashboardController, ImageController, PermitsController, HealthController],

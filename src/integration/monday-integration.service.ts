@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { firstValueFrom } from 'rxjs';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { Site, Permit } from '../domain/entities';
 import { MondayBoardData, MondayItem, MondayColumnValue } from './interfaces/monday-data.interface';
 
@@ -24,8 +25,9 @@ export class MondayIntegrationService {
         this.apiKey = this.configService.get<string>('MONDAY_API_KEY') || '';
     }
 
+    @Cron(CronExpression.EVERY_10_MINUTES)
     async syncAll() {
-        this.logger.log('Starting Monday.com sync...');
+        this.logger.log('Starting Monday.com sync (scheduled)...');
         await this.syncSites();
         await this.syncWhitelists();
         this.logger.log('Monday.com sync completed.');
@@ -116,9 +118,19 @@ export class MondayIntegrationService {
             const endDateStr = item.column_values.find((c: MondayColumnValue) => c.id === 'date_mkqeq1q6')?.text;
 
             if (vrm) {
+                // Try finding by Monday Item ID first, then by VRM + Site
                 let permit = await this.permitRepo.findOne({
-                    where: item.id ? { mondayItemId: item.id } : { vrm, siteId: siteId || undefined }
+                    where: { mondayItemId: item.id }
                 });
+
+                if (!permit) {
+                    const whereCondition = siteId 
+                        ? { vrm, siteId }
+                        : { vrm, siteId: null as any };
+                    permit = await this.permitRepo.findOne({
+                        where: whereCondition
+                    });
+                }
 
                 if (!permit) {
                     permit = this.permitRepo.create({ vrm, type: 'WHITELIST' });
