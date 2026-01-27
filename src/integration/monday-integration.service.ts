@@ -190,18 +190,25 @@ export class MondayIntegrationService {
             const endDateStr = item.column_values.find((c: MondayColumnValue) => c.id === 'date_mkqeq1q6')?.text;
 
             if (vrm) {
-                // Try finding by Monday Item ID first, then by VRM + Site
+                // Try finding by Monday Item ID first
                 let permit = await this.permitRepo.findOne({
                     where: { mondayItemId: item.id }
                 });
 
                 if (!permit) {
-                    const whereCondition = siteId
-                        ? { vrm, siteId }
-                        : { vrm, siteId: null as any };
+                    // Try exact match (VRM + Site)
                     permit = await this.permitRepo.findOne({
-                        where: whereCondition
+                        where: siteId ? { vrm, siteId } : { vrm, siteId: IsNull() }
                     });
+
+                    // If still not found, but we have a valid siteId coming in,
+                    // check if we can "adopt" an existing unassigned (global) permit for this VRM
+                    // providing it doesn't already have a mondayItemId (which would mean it belongs to another item)
+                    if (!permit && siteId) {
+                        permit = await this.permitRepo.findOne({
+                            where: { vrm, siteId: IsNull(), mondayItemId: IsNull() }
+                        });
+                    }
                 }
 
                 if (!permit) {
@@ -233,6 +240,18 @@ export class MondayIntegrationService {
                 await this.permitRepo.remove(local);
             }
         }
+
+        // Cleanup: Remove any "Zombie" global permits.
+        // These are WHITELIST permits with NO siteId and NO mondayItemId.
+        // User reports these as "Issues" and they should not exist.
+        const zombies = await this.permitRepo.find({
+            where: { type: 'WHITELIST', siteId: IsNull(), mondayItemId: IsNull() }
+        });
+        if (zombies.length > 0) {
+            this.logger.log(`Cleaning up ${zombies.length} zombie global permits...`);
+            await this.permitRepo.remove(zombies);
+        }
+
         return count;
     }
 
