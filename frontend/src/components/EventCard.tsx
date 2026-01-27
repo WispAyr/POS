@@ -46,10 +46,18 @@ export function EventCard({ vrm, siteId, timestamp, direction, cameraIds, images
 
     return (
         <>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group">
+            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden hover:shadow-lg dark:hover:shadow-black/50 transition-all duration-300 group">
                 {/* Image Section */}
                 <div className="relative aspect-video bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden">
-                    {plateImage ? (
+                    {overviewImage ? (
+                        <img
+                            src={overviewImage}
+                            alt="Overview"
+                            className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                            onClick={() => openImageModal(overviewImage)}
+                        />
+                    ) : plateImage ? (
                         <img
                             src={plateImage}
                             alt={`Plate ${vrm}`}
@@ -72,16 +80,19 @@ export function EventCard({ vrm, siteId, timestamp, direction, cameraIds, images
                         {direction}
                     </div>
 
-                    {/* Overview thumbnail */}
-                    {overviewImage && (
+                    {/* Plate thumbnail */}
+                    {overviewImage && plateImage && (
                         <div
-                            className="absolute bottom-2 right-2 w-16 h-12 rounded-lg overflow-hidden border-2 border-white/50 shadow-lg cursor-pointer hover:scale-110 transition-transform"
-                            onClick={() => openImageModal(overviewImage)}
+                            className="absolute bottom-2 right-2 w-20 h-10 rounded-lg overflow-hidden border-2 border-white/50 shadow-lg cursor-pointer hover:scale-110 transition-transform bg-black"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                openImageModal(plateImage);
+                            }}
                         >
                             <img
-                                src={overviewImage}
-                                alt="Overview"
-                                className="w-full h-full object-cover"
+                                src={plateImage}
+                                alt="Plate Crop"
+                                className="w-full h-full object-contain"
                                 loading="lazy"
                             />
                         </div>
@@ -91,11 +102,11 @@ export function EventCard({ vrm, siteId, timestamp, direction, cameraIds, images
                 {/* Info Section */}
                 <div className="p-4">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-xl font-bold text-gray-900 tracking-wider font-mono">{vrm}</span>
-                        <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-md font-medium">{siteId}</span>
+                        <span className="text-xl font-bold text-gray-900 dark:text-white tracking-wider font-mono transition-colors">{vrm}</span>
+                        <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 rounded-md font-medium transition-colors">{siteId}</span>
                     </div>
 
-                    <div className="flex items-center justify-between text-sm text-gray-500">
+                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 transition-colors">
                         <div className="flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5" />
                             {formattedTime}

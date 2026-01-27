@@ -23,6 +23,9 @@ export function SettingsView() {
         sites: number;
         events: number;
     } | null>(null);
+    const [hideUnknownPlates, setHideUnknownPlates] = useState(() => {
+        return localStorage.getItem('hideUnknownPlates') === 'true';
+    });
 
     const addLog = (msg: string, type: 'info' | 'error' | 'success' = 'info') => {
         setSyncLogs(prev => [{ time: new Date().toLocaleTimeString(), msg, type }, ...prev].slice(0, 50));
@@ -105,13 +108,13 @@ export function SettingsView() {
         setAnprSync({ isRunning: true, message: 'Starting batch sync...' });
         addLog(`Initiating chunked sync for ${hours}h period...`, 'info');
 
-        const BATCH_SIZE = 50;
+        const BATCH_SIZE = 100;
         let offset = 0;
         let totalNew = 0;
         let totalUpdated = 0;
         let totalProcessed = 0;
         let hasMore = true;
-        const maxBatches = 20; // Safety limit
+        const maxBatches = 500; // Increased to support large 7-day syncs
         let batchCount = 0;
 
         try {
@@ -161,6 +164,12 @@ export function SettingsView() {
         }
     };
 
+    const toggleHideUnknown = (val: boolean) => {
+        setHideUnknownPlates(val);
+        localStorage.setItem('hideUnknownPlates', String(val));
+        addLog(`Display preference: ${val ? 'Hiding' : 'Showing'} unknown plates`, 'info');
+    };
+
     const SyncCard = ({
         title,
         description,
@@ -174,15 +183,15 @@ export function SettingsView() {
         status: SyncStatus;
         onSync: () => void;
     }) => (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-6">
             <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4">
-                    <div className="p-3 bg-blue-50 rounded-xl">
-                        <Icon className="w-6 h-6 text-blue-600" />
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                        <Icon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                        <h3 className="font-semibold text-gray-900">{title}</h3>
-                        <p className="text-sm text-gray-500 mt-1">{description}</p>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">{title}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{description}</p>
                     </div>
                 </div>
                 <button
@@ -205,31 +214,31 @@ export function SettingsView() {
             </div>
 
             {/* Status */}
-            <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-800">
                 <div className="flex items-center gap-2 text-sm">
                     {status.isRunning ? (
                         <>
                             <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-                            <span className="text-blue-600">{status.message || 'Processing...'}</span>
+                            <span className="text-blue-600 dark:text-blue-400">{status.message || 'Processing...'}</span>
                         </>
                     ) : status.error ? (
                         <>
                             <XCircle className="w-4 h-4 text-red-500" />
-                            <span className="text-red-600">{status.error}</span>
+                            <span className="text-red-600 dark:text-red-400">{status.error}</span>
                         </>
                     ) : status.message ? (
                         <>
                             <CheckCircle className="w-4 h-4 text-green-500" />
-                            <span className="text-green-600">{status.message}</span>
+                            <span className="text-green-600 dark:text-green-400">{status.message}</span>
                         </>
                     ) : (
                         <>
-                            <Clock className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-500">No sync run yet</span>
+                            <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                            <span className="text-gray-500 dark:text-gray-400">No sync run yet</span>
                         </>
                     )}
                     {status.lastRun && (
-                        <span className="ml-auto text-gray-400">Last: {status.lastRun}</span>
+                        <span className="ml-auto text-gray-400 dark:text-gray-500">Last: {status.lastRun}</span>
                     )}
                 </div>
             </div>
@@ -266,28 +275,28 @@ export function SettingsView() {
 
             {/* Sync Controls */}
             <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <HardDrive className="w-5 h-5" />
                     Data Synchronization
                 </h3>
 
                 {/* ANPR Sync with Time Range */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-6">
                     <div className="flex items-start justify-between">
                         <div className="flex items-start gap-4">
-                            <div className="p-3 bg-blue-50 rounded-xl">
-                                <Database className="w-6 h-6 text-blue-600" />
+                            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                                <Database className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                             </div>
                             <div>
-                                <h3 className="font-semibold text-gray-900">ANPR Detection Sync</h3>
-                                <p className="text-sm text-gray-500 mt-1">Poll for new ANPR detections from external cameras and download associated images</p>
+                                <h3 className="font-semibold text-gray-900 dark:text-white">ANPR Detection Sync</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Poll for new ANPR detections from external cameras and download associated images</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
                             <select
                                 value={anprHours}
                                 onChange={(e) => setAnprHours(Number(e.target.value))}
-                                className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
                             >
                                 <option value={1}>Last 1 hour</option>
                                 <option value={6}>Last 6 hours</option>
@@ -316,31 +325,31 @@ export function SettingsView() {
                     </div>
 
                     {/* Status */}
-                    <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-800">
                         <div className="flex items-center gap-2 text-sm">
                             {anprSync.isRunning ? (
                                 <>
                                     <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-                                    <span className="text-blue-600">{anprSync.message || 'Processing batches...'}</span>
+                                    <span className="text-blue-600 dark:text-blue-400">{anprSync.message || 'Processing batches...'}</span>
                                 </>
                             ) : anprSync.error ? (
                                 <>
                                     <XCircle className="w-4 h-4 text-red-500" />
-                                    <span className="text-red-600">{anprSync.error}</span>
+                                    <span className="text-red-600 dark:text-red-400">{anprSync.error}</span>
                                 </>
                             ) : anprSync.message ? (
                                 <>
                                     <CheckCircle className="w-4 h-4 text-green-500" />
-                                    <span className="text-green-600">{anprSync.message}</span>
+                                    <span className="text-green-600 dark:text-green-400">{anprSync.message}</span>
                                 </>
                             ) : (
                                 <>
-                                    <Clock className="w-4 h-4 text-gray-400" />
-                                    <span className="text-gray-500">No sync run yet</span>
+                                    <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                                    <span className="text-gray-500 dark:text-gray-400">No sync run yet</span>
                                 </>
                             )}
                             {anprSync.lastRun && (
-                                <span className="ml-auto text-gray-400">Last: {anprSync.lastRun}</span>
+                                <span className="ml-auto text-gray-400 dark:text-gray-500">Last: {anprSync.lastRun}</span>
                             )}
                         </div>
                     </div>
@@ -362,34 +371,60 @@ export function SettingsView() {
                     onSync={() => runSync('cameras', setCameraSync, '/integration/monday/cameras/sync')}
                 />
 
-                <div className="pt-4 border-t border-gray-100 mt-6">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
-                        <Server className="w-5 h-5 text-purple-600" />
+                {/* Display Settings */}
+                <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                            <Server className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">Display Settings</h3>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-800">
+                        <div>
+                            <div className="font-medium text-gray-900 dark:text-white">Hide Unknown Plates</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">Do not show events where the license plate was not recognized</div>
+                        </div>
+                        <button
+                            onClick={() => toggleHideUnknown(!hideUnknownPlates)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${hideUnknownPlates ? 'bg-blue-600' : 'bg-gray-200 dark:bg-slate-700'
+                                }`}
+                        >
+                            <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${hideUnknownPlates ? 'translate-x-6' : 'translate-x-1'
+                                    }`}
+                            />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="pt-4 border-t border-gray-100 dark:border-slate-800 mt-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
+                        <Server className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                         Infrastructure Setup
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <button
                             onClick={() => runSync('cameras', setCameraSync, '/ingestion/anpr/discover')}
-                            className="flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-xl hover:border-purple-300 hover:bg-purple-50 transition-all text-left"
+                            className="flex items-center gap-3 p-4 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl hover:border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all text-left"
                         >
-                            <div className="p-2 bg-purple-100 rounded-lg">
-                                <Database className="w-5 h-5 text-purple-600" />
+                            <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+                                <Database className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                             </div>
                             <div>
-                                <div className="font-semibold text-gray-900">Discover Cameras</div>
-                                <div className="text-xs text-gray-500">Scan ANPR feed and push to Monday</div>
+                                <div className="font-semibold text-gray-900 dark:text-white">Discover Cameras</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">Scan ANPR feed and push to Monday</div>
                             </div>
                         </button>
                         <button
                             onClick={() => runSync('cameras', setCameraSync, '/integration/monday/cameras/setup')}
-                            className="flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all text-left"
+                            className="flex items-center gap-3 p-4 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all text-left"
                         >
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                                <Cloud className="w-5 h-5 text-blue-600" />
+                            <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                                <Cloud className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                             </div>
                             <div>
-                                <div className="font-semibold text-gray-900">Setup Camera Board</div>
-                                <div className="text-xs text-gray-500">Initialize Monday.com board columns</div>
+                                <div className="font-semibold text-gray-900 dark:text-white">Setup Camera Board</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">Initialize Monday.com board columns</div>
                             </div>
                         </button>
                     </div>
@@ -399,22 +434,22 @@ export function SettingsView() {
                 {syncLogs.length > 0 && (
                     <div className="mt-6">
                         <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Sync Log</h3>
+                            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Sync Log</h3>
                             <button
                                 onClick={() => setSyncLogs([])}
-                                className="text-xs text-blue-600 hover:underline"
+                                className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                             >
                                 Clear Logs
                             </button>
                         </div>
-                        <div className="bg-slate-900 rounded-lg p-4 font-mono text-xs h-48 overflow-y-auto space-y-1 shadow-inner">
+                        <div className="bg-slate-900 dark:bg-black rounded-lg p-4 font-mono text-xs h-48 overflow-y-auto space-y-1 shadow-inner">
                             {syncLogs.map((log, i) => (
                                 <div key={i} className="flex gap-3">
-                                    <span className="text-slate-500 shrink-0">[{log.time}]</span>
+                                    <span className="text-slate-500 dark:text-slate-600 shrink-0">[{log.time}]</span>
                                     <span className={
                                         log.type === 'error' ? 'text-red-400' :
                                             log.type === 'success' ? 'text-green-400' :
-                                                'text-slate-300'
+                                                'text-slate-300 dark:text-slate-400'
                                     }>
                                         {log.msg}
                                     </span>
@@ -426,12 +461,12 @@ export function SettingsView() {
             </div>
 
             {/* Danger Zone */}
-            <div className="bg-red-50 rounded-xl p-6 border border-red-100">
+            <div className="bg-red-50 dark:bg-red-900/10 rounded-xl p-6 border border-red-100 dark:border-red-900/20 transition-colors">
                 <div className="flex items-center gap-3 mb-4">
-                    <XCircle className="w-6 h-6 text-red-600" />
-                    <h2 className="text-xl font-semibold text-red-900">Danger Zone</h2>
+                    <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                    <h2 className="text-xl font-semibold text-red-900 dark:text-red-400">Danger Zone</h2>
                 </div>
-                <p className="text-sm text-red-600 mb-6">
+                <p className="text-sm text-red-600 dark:text-red-400/80 mb-6 font-medium">
                     Purging will delete all movements, sessions, decisions, and local images.
                     This action is destructive and cannot be undone.
                 </p>
@@ -441,7 +476,7 @@ export function SettingsView() {
                             runSync('anpr', setAnprSync, '/api/reset');
                         }
                     }}
-                    className="px-6 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-colors shadow-sm flex items-center gap-2"
+                    className="px-6 py-3 bg-red-600 dark:bg-red-700 text-white rounded-lg font-bold hover:bg-red-700 dark:hover:bg-red-800 transition-all shadow-sm flex items-center gap-2 active:scale-95"
                 >
                     <Database className="w-5 h-5" />
                     Purge All Data & Images
@@ -449,24 +484,24 @@ export function SettingsView() {
             </div>
 
             {/* System Info */}
-            <div className="bg-gray-50 rounded-xl p-6">
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">System Information</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <span className="text-gray-500">API Endpoint:</span>
-                        <span className="ml-2 font-mono text-gray-900">{API_BASE}</span>
+            <div className="bg-gray-50 dark:bg-slate-800/50 rounded-xl p-6 border border-gray-100 dark:border-slate-800 transition-colors">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">System Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded-lg border border-gray-100 dark:border-slate-800">
+                        <span className="text-gray-500 dark:text-gray-400">API Endpoint:</span>
+                        <span className="font-mono text-gray-900 dark:text-white">{API_BASE}</span>
                     </div>
-                    <div>
-                        <span className="text-gray-500">ANPR Polling:</span>
-                        <span className="ml-2 text-gray-900">Every 5 minutes (automatic)</span>
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded-lg border border-gray-100 dark:border-slate-800">
+                        <span className="text-gray-500 dark:text-gray-400">ANPR Polling:</span>
+                        <span className="text-gray-900 dark:text-white">Every 5 minutes (automatic)</span>
                     </div>
-                    <div>
-                        <span className="text-gray-500">Image Storage:</span>
-                        <span className="ml-2 font-mono text-gray-900">/uploads/images/</span>
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded-lg border border-gray-100 dark:border-slate-800">
+                        <span className="text-gray-500 dark:text-gray-400">Image Storage:</span>
+                        <span className="font-mono text-gray-900 dark:text-white">/uploads/images/</span>
                     </div>
-                    <div>
-                        <span className="text-gray-500">Camera Board ID:</span>
-                        <span className="ml-2 font-mono text-gray-900">1952030503</span>
+                    <div className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded-lg border border-gray-100 dark:border-slate-800">
+                        <span className="text-gray-500 dark:text-gray-400">Camera Board ID:</span>
+                        <span className="font-mono text-gray-900 dark:text-white">1952030503</span>
                     </div>
                 </div>
             </div>

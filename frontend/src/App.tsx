@@ -1,20 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardStats } from './components/DashboardStats';
 import { SitesList } from './components/SitesList';
 import { EnforcementReview } from './components/EnforcementReview';
 import { EventsView } from './components/EventsView';
 import { SettingsView } from './components/SettingsView';
-import { LayoutDashboard, Map as MapIcon, Users, Settings, ShieldAlert, Camera } from 'lucide-react';
+import { LayoutDashboard, Map as MapIcon, Users, Settings, ShieldAlert, Camera, Sun, Moon } from 'lucide-react';
 
 function App() {
   const [currentView, setCurrentView] = useState('dashboard');
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') || 'light';
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex transition-colors duration-200">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 hidden md:block">
+      <aside className="w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 hidden md:block transition-colors">
         <div className="p-6">
-          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <span className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-lg">P</span>
             POS Admin
           </h1>
@@ -22,39 +42,39 @@ function App() {
         <nav className="mt-6 px-4 space-y-1">
           <button
             onClick={() => setCurrentView('dashboard')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium ${currentView === 'dashboard' ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'dashboard' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
           >
             <LayoutDashboard className="w-5 h-5" />
             Dashboard
           </button>
           <button
             onClick={() => setCurrentView('sites')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium ${currentView === 'sites' ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'sites' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
           >
             <MapIcon className="w-5 h-5" />
             Sites
           </button>
           <button
             onClick={() => setCurrentView('enforcement')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium ${currentView === 'enforcement' ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'enforcement' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
           >
             <ShieldAlert className="w-5 h-5" />
             Review Queue
           </button>
           <button
             onClick={() => setCurrentView('events')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium ${currentView === 'events' ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'events' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
           >
             <Camera className="w-5 h-5" />
             Events
           </button>
-          <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium">
+          <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg font-medium transition-colors">
             <Users className="w-5 h-5" />
             Permits
           </button>
           <button
             onClick={() => setCurrentView('settings')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium ${currentView === 'settings' ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'settings' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
           >
             <Settings className="w-5 h-5" />
             Settings
@@ -63,32 +83,41 @@ function App() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 overflow-y-auto">
         <header className="flex justify-between items-center mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors">
               {currentView === 'dashboard' ? 'Dashboard' :
                 currentView === 'sites' ? 'Sites Management' :
                   currentView === 'events' ? 'ANPR Events' :
                     currentView === 'settings' ? 'System Settings' : 'Enforcement Review'}
             </h2>
-            <p className="text-gray-500 mt-1">Real-time parking operations overview</p>
+            <p className="text-gray-500 dark:text-gray-400 mt-1 transition-colors">Real-time parking operations overview</p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span className="w-2 h-2 rounded-full bg-green-500"></span>
+          <div className="flex items-center gap-6">
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all shadow-sm"
+              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            </button>
+            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 font-medium bg-white dark:bg-slate-900 px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm transition-colors">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
               System Online
             </div>
           </div>
         </header>
 
-        {currentView === 'dashboard' && <DashboardStats />}
-        {currentView === 'sites' && <SitesList />}
-        {currentView === 'enforcement' && <EnforcementReview />}
-        {currentView === 'events' && <EventsView />}
-        {currentView === 'settings' && <SettingsView />}
+        <div className="transition-all duration-300">
+          {currentView === 'dashboard' && <DashboardStats />}
+          {currentView === 'sites' && <SitesList />}
+          {currentView === 'enforcement' && <EnforcementReview />}
+          {currentView === 'events' && <EventsView />}
+          {currentView === 'settings' && <SettingsView />}
+        </div>
       </main>
-    </div >
+    </div>
   );
 }
 

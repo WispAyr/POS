@@ -63,14 +63,22 @@ export function DashboardStats() {
                 />
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-80">
-                <h3 className="text-lg font-semibold mb-4">Activity Overview</h3>
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 h-80 transition-colors">
+                <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Activity Overview</h3>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.1} />
+                        <XAxis dataKey="name" stroke="#94a3b8" />
+                        <YAxis stroke="#94a3b8" />
+                        <Tooltip
+                            contentStyle={{
+                                backgroundColor: '#0f172a',
+                                border: 'none',
+                                borderRadius: '8px',
+                                color: '#fff'
+                            }}
+                            itemStyle={{ color: '#fff' }}
+                        />
                         <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                     </BarChart>
                 </ResponsiveContainer>

@@ -65,15 +65,15 @@ export function EnforcementReview() {
 
     if (!currentDecision) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 bg-white rounded-xl shadow-sm border border-gray-100 min-h-[400px]">
-                <div className="p-4 bg-green-50 rounded-full mb-4">
-                    <Check className="w-8 h-8 text-green-600" />
+            <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 min-h-[400px] transition-colors">
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-full mb-4">
+                    <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900">All Caught Up!</h3>
-                <p className="text-gray-500 mt-2">No pending violations to review.</p>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white transition-colors">All Caught Up!</h3>
+                <p className="text-gray-500 dark:text-gray-400 mt-2 transition-colors">No pending violations to review.</p>
                 <button
                     onClick={fetchQueue}
-                    className="mt-6 px-4 py-2 text-blue-600 font-medium hover:bg-blue-50 rounded-lg transition-colors"
+                    className="mt-6 px-4 py-2 text-blue-600 dark:text-blue-400 font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                 >
                     Refresh Queue
                 </button>
@@ -87,20 +87,20 @@ export function EnforcementReview() {
 
     return (
         <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/50 border border-gray-200 dark:border-slate-800 overflow-hidden transition-colors">
                 {/* Header */}
-                <div className="p-6 border-b border-gray-100 flex justify-between items-start">
+                <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-start transition-colors">
                     <div>
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1">
+                            <span className="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 transition-colors">
                                 <AlertTriangle className="w-4 h-4" />
                                 Possible Violation
                             </span>
-                            <span className="text-sm text-gray-500 font-mono">#{currentDecision.id.slice(0, 8)}</span>
+                            <span className="text-sm text-gray-500 dark:text-gray-500 font-mono">#{currentDecision.id.slice(0, 8)}</span>
                         </div>
-                        <h2 className="text-3xl font-bold text-gray-900 tracking-tight">{currentDecision.vrm}</h2>
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight transition-colors">{currentDecision.vrm}</h2>
                     </div>
-                    <div className="text-right text-sm text-gray-500 space-y-1">
+                    <div className="text-right text-sm text-gray-500 dark:text-gray-400 space-y-1 transition-colors">
                         <div className="flex items-center justify-end gap-1">
                             <MapPin className="w-4 h-4" /> {currentDecision.siteId}
                         </div>
@@ -133,40 +133,40 @@ export function EnforcementReview() {
                 </div>
 
                 {/* Details */}
-                <div className="p-6 bg-gray-50 border-t border-gray-100">
-                    <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Violation Details</h4>
+                <div className="p-6 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-100 dark:border-slate-800 transition-colors">
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">Violation Details</h4>
                     <div className="flex gap-4">
-                        <div className="flex-1 bg-white p-4 rounded-lg border border-gray-200">
-                            <span className="block text-xs text-gray-500 mb-1">Reason</span>
-                            <span className="font-semibold text-gray-900">{currentDecision.reason}</span>
+                        <div className="flex-1 bg-white dark:bg-slate-900 p-4 rounded-lg border border-gray-200 dark:border-slate-800 transition-colors">
+                            <span className="block text-xs text-gray-500 dark:text-gray-500 mb-1">Reason</span>
+                            <span className="font-semibold text-gray-900 dark:text-white transition-colors">{currentDecision.reason}</span>
                         </div>
-                        <div className="flex-1 bg-white p-4 rounded-lg border border-gray-200">
-                            <span className="block text-xs text-gray-500 mb-1">AI Confidence</span>
+                        <div className="flex-1 bg-white dark:bg-slate-900 p-4 rounded-lg border border-gray-200 dark:border-slate-800 transition-colors">
+                            <span className="block text-xs text-gray-500 dark:text-gray-500 mb-1">AI Confidence</span>
                             <div className="flex items-center gap-2">
-                                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="flex-1 h-2 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                     <div
-                                        className="h-full bg-blue-600 rounded-full"
+                                        className="h-full bg-blue-600 dark:bg-blue-500 rounded-full"
                                         style={{ width: `${currentDecision.confidenceScore * 100}%` }}
                                     />
                                 </div>
-                                <span className="font-bold text-gray-900">{(currentDecision.confidenceScore * 100).toFixed(0)}%</span>
+                                <span className="font-bold text-gray-900 dark:text-white">{(currentDecision.confidenceScore * 100).toFixed(0)}%</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Actions */}
-                <div className="p-6 flex gap-4">
+                <div className="p-6 flex gap-4 bg-white dark:bg-slate-900 transition-colors">
                     <button
                         onClick={() => handleReview('REJECT')}
-                        className="flex-1 flex items-center justify-center gap-2 py-4 rounded-xl border-2 border-gray-200 text-gray-700 font-bold hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-95"
+                        className="flex-1 flex items-center justify-center gap-2 py-4 rounded-xl border-2 border-gray-200 dark:border-slate-800 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-50 dark:hover:bg-slate-800 hover:border-gray-300 dark:hover:border-slate-700 transition-all active:scale-95"
                     >
                         <X className="w-6 h-6" />
                         Reject False Positive
                     </button>
                     <button
                         onClick={() => handleReview('APPROVE')}
-                        className="flex-1 flex items-center justify-center gap-2 py-4 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95"
+                        className="flex-1 flex items-center justify-center gap-2 py-4 rounded-xl bg-blue-600 dark:bg-blue-500 text-white font-bold hover:bg-blue-700 dark:hover:bg-blue-600 shadow-lg shadow-blue-200 dark:shadow-none transition-all active:scale-95"
                     >
                         <Check className="w-6 h-6" />
                         Approve Violation

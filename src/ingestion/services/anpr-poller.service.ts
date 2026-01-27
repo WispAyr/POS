@@ -62,6 +62,9 @@ export class AnprPollerService {
                 this.logger.log(`Processing ${events.length} events...`);
                 let ingestedCount = 0;
 
+                // Cache all sites to avoid redundant DB queries in the loop
+                const allSites = await this.siteRepo.find();
+
                 // Process in batches of 5 to avoid overloading
                 const BATCH_SIZE = 5;
                 for (let i = 0; i < events.length; i += BATCH_SIZE) {
@@ -70,10 +73,11 @@ export class AnprPollerService {
                         const dto = new IngestAnprDto();
 
                         // Map Site ID
+                        const cameraId = event.cameraId || event.camera_id || 'UNKNOWN';
                         if (event.site_id || event.siteId) {
                             dto.siteId = event.site_id || event.siteId;
-                        } else if (event.cameraId && typeof event.cameraId === 'string') {
-                            dto.siteId = await this.deriveSiteIdFromCamera(event.cameraId);
+                        } else if (cameraId !== 'UNKNOWN') {
+                            dto.siteId = await this.deriveSiteIdFromCamera(cameraId, allSites);
                         } else {
                             dto.siteId = 'UNKNOWN';
                         }
@@ -156,11 +160,12 @@ export class AnprPollerService {
             }
 
             const cameraMap = new Map<string, string>();
+            const allSites = await this.siteRepo.find();
 
             for (const event of events) {
                 const cameraId = event.cameraId || event.camera_id;
                 if (cameraId && !cameraMap.has(cameraId)) {
-                    const siteId = await this.deriveSiteIdFromCamera(cameraId);
+                    const siteId = await this.deriveSiteIdFromCamera(cameraId, allSites);
                     cameraMap.set(cameraId, siteId);
                 }
             }
@@ -178,9 +183,9 @@ export class AnprPollerService {
         }
     }
 
-    private async deriveSiteIdFromCamera(cameraId: string): Promise<string> {
+    private async deriveSiteIdFromCamera(cameraId: string, cachedSites?: Site[]): Promise<string> {
         // Find site where this camera is configured
-        const sites = await this.siteRepo.find();
+        const sites = cachedSites || await this.siteRepo.find();
         for (const site of sites) {
             const cameraConfig = site.config?.cameras?.find(
                 (c: any) => c.id?.toLowerCase() === cameraId.toLowerCase()

@@ -69,12 +69,14 @@ export function EventsView() {
     const fetchEvents = useCallback(async (page = 1) => {
         setLoading(true);
         try {
+            const hideUnknown = localStorage.getItem('hideUnknownPlates') === 'true';
             const params = new URLSearchParams({
                 page: String(page),
                 limit: '20',
             });
             if (siteFilter) params.set('siteId', siteFilter);
             if (debouncedVrm) params.set('vrm', debouncedVrm);
+            if (hideUnknown) params.set('hideUnknown', 'true');
 
             const res = await fetch(`${API_BASE}/api/events?${params}`);
             const json: EventsResponse = await res.json();
@@ -101,7 +103,7 @@ export function EventsView() {
     return (
         <div className="space-y-6">
             {/* Filters Bar */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-4 transition-colors">
                 <div className="flex flex-wrap gap-4 items-center">
                     {/* Site Filter */}
                     <div className="flex items-center gap-2">
@@ -109,7 +111,7 @@ export function EventsView() {
                         <select
                             value={siteFilter}
                             onChange={(e) => setSiteFilter(e.target.value)}
-                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none min-w-[180px]"
+                            className="px-3 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none min-w-[180px] transition-colors"
                         >
                             <option value="">All Sites</option>
                             {sites.map(site => (
@@ -126,21 +128,21 @@ export function EventsView() {
                             placeholder="Search VRM..."
                             value={vrmSearch}
                             onChange={(e) => setVrmSearch(e.target.value.toUpperCase())}
-                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none w-full font-mono"
+                            className="px-3 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none w-full font-mono transition-colors"
                         />
                     </div>
 
                     {/* Refresh */}
                     <button
                         onClick={() => fetchEvents(meta.page)}
-                        className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                         title="Refresh"
                     >
                         <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                     </button>
 
                     {/* Stats */}
-                    <div className="ml-auto text-sm text-gray-500">
+                    <div className="ml-auto text-sm text-gray-500 dark:text-gray-400">
                         {meta.total.toLocaleString()} events
                     </div>
                 </div>
@@ -150,16 +152,16 @@ export function EventsView() {
             {loading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {[...Array(8)].map((_, i) => (
-                        <div key={i} className="bg-gray-100 rounded-xl h-64 animate-pulse" />
+                        <div key={i} className="bg-gray-100 dark:bg-slate-900 rounded-xl h-64 animate-pulse border border-gray-200 dark:border-slate-800" />
                     ))}
                 </div>
             ) : events.length === 0 ? (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-                    <p className="text-gray-500">No events found</p>
+                <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-12 text-center transition-colors">
+                    <p className="text-gray-500 dark:text-gray-400">No events found</p>
                     {(siteFilter || debouncedVrm) && (
                         <button
                             onClick={() => { setSiteFilter(''); setVrmSearch(''); }}
-                            className="mt-2 text-blue-600 hover:underline text-sm"
+                            className="mt-2 text-blue-600 dark:text-blue-400 hover:underline text-sm"
                         >
                             Clear filters
                         </button>
@@ -179,9 +181,9 @@ export function EventsView() {
                     <button
                         onClick={() => goToPage(meta.page - 1)}
                         disabled={meta.page <= 1}
-                        className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="p-2 rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        <ChevronLeft className="w-5 h-5" />
+                        <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                     </button>
 
                     <div className="flex items-center gap-1">
@@ -202,8 +204,8 @@ export function EventsView() {
                                     key={pageNum}
                                     onClick={() => goToPage(pageNum)}
                                     className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${pageNum === meta.page
-                                            ? 'bg-blue-600 text-white'
-                                            : 'border border-gray-200 hover:bg-gray-50'
+                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none'
+                                        : 'bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'
                                         }`}
                                 >
                                     {pageNum}
@@ -215,9 +217,9 @@ export function EventsView() {
                     <button
                         onClick={() => goToPage(meta.page + 1)}
                         disabled={meta.page >= meta.totalPages}
-                        className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="p-2 rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        <ChevronRight className="w-5 h-5" />
+                        <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                     </button>
                 </div>
             )}

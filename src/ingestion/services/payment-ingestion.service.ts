@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Payment } from '../../domain/entities';
 import { IngestPaymentDto } from '../dto/ingest-payment.dto';
+import { ReconciliationService } from '../../engine/services/reconciliation.service';
 
 @Injectable()
 export class PaymentIngestionService {
@@ -11,6 +12,7 @@ export class PaymentIngestionService {
     constructor(
         @InjectRepository(Payment)
         private readonly paymentRepo: Repository<Payment>,
+        private readonly reconciliationService: ReconciliationService,
     ) { }
 
     async ingest(dto: IngestPaymentDto): Promise<Payment> {
@@ -28,7 +30,16 @@ export class PaymentIngestionService {
         const saved = await this.paymentRepo.save(payment);
         this.logger.log(`Ingested payment: ${saved.id} for VRM ${saved.vrm}, Expiry: ${saved.expiryTime}`);
 
-        // TODO: Trigger Reconciliation (Async)
+        // Trigger reconciliation asynchronously (don't block payment ingestion)
+        this.reconciliationService.reconcilePayment(
+            saved.vrm,
+            saved.siteId,
+            saved.startTime,
+            saved.expiryTime
+        ).catch(err => {
+            this.logger.error(`Error reconciling payment ${saved.id}`, err.stack);
+        });
+
         return saved;
     }
 }

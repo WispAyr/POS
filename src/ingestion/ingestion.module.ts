@@ -16,7 +16,7 @@ import { IntegrationModule } from '../integration/integration.module';
 @Module({
     imports: [
         DomainModule,
-        EngineModule,
+        EngineModule, // Provides ReconciliationService
         HttpModule,
         forwardRef(() => IntegrationModule),
         TypeOrmModule.forFeature([Movement, Site, Payment, Permit]),

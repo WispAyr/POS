@@ -53,10 +53,12 @@ export class DashboardController {
         @Query('page') page = '1',
         @Query('limit') limit = '20',
         @Query('vrm') vrm?: string,
+        @Query('hideUnknown') hideUnknown?: string,
     ) {
         const pageNum = Math.max(1, parseInt(page, 10) || 1);
         const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
         const skip = (pageNum - 1) * limitNum;
+        const shouldHideUnknown = hideUnknown === 'true';
 
         // Build query with filters
         const queryBuilder = this.movementRepo.createQueryBuilder('movement')
@@ -78,6 +80,10 @@ export class DashboardController {
 
         if (vrm) {
             queryBuilder.andWhere('movement.vrm ILIKE :vrm', { vrm: `%${vrm}%` });
+        }
+
+        if (shouldHideUnknown) {
+            queryBuilder.andWhere('movement.vrm != :unknown', { unknown: 'UNKNOWN' });
         }
 
         const [data, total] = await queryBuilder

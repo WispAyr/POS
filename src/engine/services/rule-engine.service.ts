@@ -34,26 +34,33 @@ export class RuleEngineService {
         }
 
         // Check Payments
-        // Find payments covering this session
-        // Logic: Payment start <= Session End AND Payment Expiry >= Session Start ? 
-        // Or simple: Payment Valid for the duration?
-        // Let's assume Pay & Display: Payment Amount covers Duration.
-
-        // For simplicity: Check if any payment exists closely matching
-        const payment = await this.paymentRepo.findOne({
-            where: { vrm: session.vrm, siteId: session.siteId }
-            // TODO: Time window check
-        });
-
-        if (payment) {
-            return this.recordDecision(session, DecisionOutcome.COMPLIANT, 'VALID_PAYMENT', `Payment found: ${payment.id}`);
-        }
-
-        // Check Grace Period
         const site = await this.siteRepo.findOne({ where: { id: session.siteId } });
         const graceConfig = site?.config?.gracePeriods || { entry: 10, exit: 10 };
-        const duration = session.durationMinutes || 0;
+        const entryGraceMs = (graceConfig.entry || 10) * 60000;
+        const exitGraceMs = (graceConfig.exit || 10) * 60000;
 
+        // The period during which the vehicle MUST have a valid payment
+        const mandatoryStart = new Date(session.startTime.getTime() + entryGraceMs);
+        const mandatoryEnd = new Date(session.endTime.getTime() - exitGraceMs);
+
+        // Find payments for this VRM and Site
+        const payments = await this.paymentRepo.find({
+            where: { vrm: session.vrm, siteId: session.siteId }
+        });
+
+        // Check if any single payment covers the mandatory period
+        const validPayment = payments.find(p => {
+            const pStart = new Date(p.startTime).getTime();
+            const pExpiry = new Date(p.expiryTime).getTime();
+            return pStart <= mandatoryStart.getTime() && pExpiry >= mandatoryEnd.getTime();
+        });
+
+        if (validPayment) {
+            return this.recordDecision(session, DecisionOutcome.COMPLIANT, 'VALID_PAYMENT', `Payment ${validPayment.id} covers the session (with grace)`);
+        }
+
+        // Check Grace Period (Short Stay)
+        const duration = session.durationMinutes || 0;
         if (duration <= (graceConfig.entry || 10) + (graceConfig.exit || 10)) {
             return this.recordDecision(session, DecisionOutcome.COMPLIANT, 'WITHIN_GRACE', `Duration ${duration} within grace`);
         }
