@@ -8,7 +8,7 @@ import { Site, DecisionOutcome } from '../../../src/domain/entities';
 export class TestScenarios {
   constructor(
     private generator: TestDataGenerator,
-    private dataSource: DataSource
+    private dataSource: DataSource,
   ) {}
 
   /**
@@ -23,7 +23,9 @@ export class TestScenarios {
     decision: any;
   }> {
     const vrm = this.generator.generateTestVrm('PAID');
-    const site = await this.dataSource.getRepository(Site).findOne({ where: { id: siteId } });
+    const site = await this.dataSource
+      .getRepository(Site)
+      .findOne({ where: { id: siteId } });
     if (!site) throw new Error(`Site ${siteId} not found`);
 
     // Create payment first (covers 2 hours)
@@ -34,15 +36,23 @@ export class TestScenarios {
     });
 
     // Create parking session (1 hour duration)
-    const { entry, exit, session } = await this.generator.createParkingSession(siteId, vrm, {
-      durationMinutes: 60,
-    });
+    const { entry, exit, session } = await this.generator.createParkingSession(
+      siteId,
+      vrm,
+      {
+        durationMinutes: 60,
+      },
+    );
 
     // Decision should be COMPLIANT (created by rule engine, but we can create for testing)
-    const decision = await this.generator.createDecision(session.id, DecisionOutcome.COMPLIANT, {
-      ruleApplied: 'VALID_PAYMENT',
-      rationale: 'Payment covers session duration',
-    });
+    const decision = await this.generator.createDecision(
+      session.id,
+      DecisionOutcome.COMPLIANT,
+      {
+        ruleApplied: 'VALID_PAYMENT',
+        rationale: 'Payment covers session duration',
+      },
+    );
 
     return { vrm, entry, exit, session, payment, decision };
   }
@@ -59,7 +69,9 @@ export class TestScenarios {
     decision: any;
   }> {
     const vrm = this.generator.generateTestVrm('PERMIT');
-    const site = await this.dataSource.getRepository(Site).findOne({ where: { id: siteId } });
+    const site = await this.dataSource
+      .getRepository(Site)
+      .findOne({ where: { id: siteId } });
     if (!site) throw new Error(`Site ${siteId} not found`);
 
     // Create permit
@@ -69,15 +81,23 @@ export class TestScenarios {
     });
 
     // Create parking session
-    const { entry, exit, session } = await this.generator.createParkingSession(siteId, vrm, {
-      durationMinutes: 120,
-    });
+    const { entry, exit, session } = await this.generator.createParkingSession(
+      siteId,
+      vrm,
+      {
+        durationMinutes: 120,
+      },
+    );
 
     // Decision should be COMPLIANT
-    const decision = await this.generator.createDecision(session.id, DecisionOutcome.COMPLIANT, {
-      ruleApplied: 'VALID_PERMIT',
-      rationale: 'Valid permit exists',
-    });
+    const decision = await this.generator.createDecision(
+      session.id,
+      DecisionOutcome.COMPLIANT,
+      {
+        ruleApplied: 'VALID_PERMIT',
+        rationale: 'Valid permit exists',
+      },
+    );
 
     return { vrm, entry, exit, session, permit, decision };
   }
@@ -93,20 +113,30 @@ export class TestScenarios {
     decision: any;
   }> {
     const vrm = this.generator.generateTestVrm('ENFORCE');
-    const site = await this.dataSource.getRepository(Site).findOne({ where: { id: siteId } });
+    const site = await this.dataSource
+      .getRepository(Site)
+      .findOne({ where: { id: siteId } });
     if (!site) throw new Error(`Site ${siteId} not found`);
 
     // Create parking session with long duration (exceeds grace period)
-    const { entry, exit, session } = await this.generator.createParkingSession(siteId, vrm, {
-      durationMinutes: 120, // 2 hours, exceeds grace period
-    });
+    const { entry, exit, session } = await this.generator.createParkingSession(
+      siteId,
+      vrm,
+      {
+        durationMinutes: 120, // 2 hours, exceeds grace period
+      },
+    );
 
     // Decision should be ENFORCEMENT_CANDIDATE
-    const decision = await this.generator.createDecision(session.id, DecisionOutcome.ENFORCEMENT_CANDIDATE, {
-      ruleApplied: 'NO_VALID_PAYMENT',
-      rationale: 'No payment or permit, exceeds grace period',
-      status: 'NEW',
-    });
+    const decision = await this.generator.createDecision(
+      session.id,
+      DecisionOutcome.ENFORCEMENT_CANDIDATE,
+      {
+        ruleApplied: 'NO_VALID_PAYMENT',
+        rationale: 'No payment or permit, exceeds grace period',
+        status: 'NEW',
+      },
+    );
 
     return { vrm, entry, exit, session, decision };
   }
@@ -122,19 +152,29 @@ export class TestScenarios {
     decision: any;
   }> {
     const vrm = this.generator.generateTestVrm('GRACE');
-    const site = await this.dataSource.getRepository(Site).findOne({ where: { id: siteId } });
+    const site = await this.dataSource
+      .getRepository(Site)
+      .findOne({ where: { id: siteId } });
     if (!site) throw new Error(`Site ${siteId} not found`);
 
     // Create short parking session (within grace period)
-    const { entry, exit, session } = await this.generator.createParkingSession(siteId, vrm, {
-      durationMinutes: 15, // Within grace (10 + 10 = 20 minutes)
-    });
+    const { entry, exit, session } = await this.generator.createParkingSession(
+      siteId,
+      vrm,
+      {
+        durationMinutes: 15, // Within grace (10 + 10 = 20 minutes)
+      },
+    );
 
     // Decision should be COMPLIANT
-    const decision = await this.generator.createDecision(session.id, DecisionOutcome.COMPLIANT, {
-      ruleApplied: 'WITHIN_GRACE',
-      rationale: 'Duration within grace period',
-    });
+    const decision = await this.generator.createDecision(
+      session.id,
+      DecisionOutcome.COMPLIANT,
+      {
+        ruleApplied: 'WITHIN_GRACE',
+        rationale: 'Duration within grace period',
+      },
+    );
 
     return { vrm, entry, exit, session, decision };
   }
@@ -151,7 +191,9 @@ export class TestScenarios {
     decision: any;
   }> {
     const vrm = this.generator.generateTestVrm('EXPIRED');
-    const site = await this.dataSource.getRepository(Site).findOne({ where: { id: siteId } });
+    const site = await this.dataSource
+      .getRepository(Site)
+      .findOne({ where: { id: siteId } });
     if (!site) throw new Error(`Site ${siteId} not found`);
 
     // Create payment that expires before session ends
@@ -163,18 +205,26 @@ export class TestScenarios {
     });
 
     // Create parking session that extends beyond payment expiry
-    const { entry, exit, session } = await this.generator.createParkingSession(siteId, vrm, {
-      entryTime,
-      exitTime: new Date(), // Now (2 hours later)
-      durationMinutes: 120,
-    });
+    const { entry, exit, session } = await this.generator.createParkingSession(
+      siteId,
+      vrm,
+      {
+        entryTime,
+        exitTime: new Date(), // Now (2 hours later)
+        durationMinutes: 120,
+      },
+    );
 
     // Decision should be ENFORCEMENT_CANDIDATE (payment expired)
-    const decision = await this.generator.createDecision(session.id, DecisionOutcome.ENFORCEMENT_CANDIDATE, {
-      ruleApplied: 'PAYMENT_EXPIRED',
-      rationale: 'Payment expired before session end',
-      status: 'NEW',
-    });
+    const decision = await this.generator.createDecision(
+      session.id,
+      DecisionOutcome.ENFORCEMENT_CANDIDATE,
+      {
+        ruleApplied: 'PAYMENT_EXPIRED',
+        rationale: 'Payment expired before session end',
+        status: 'NEW',
+      },
+    );
 
     return { vrm, entry, exit, session, payment, decision };
   }
@@ -191,7 +241,9 @@ export class TestScenarios {
     decision: any;
   }> {
     const vrm = this.generator.generateTestVrm('GLOBAL');
-    const site = await this.dataSource.getRepository(Site).findOne({ where: { id: siteId } });
+    const site = await this.dataSource
+      .getRepository(Site)
+      .findOne({ where: { id: siteId } });
     if (!site) throw new Error(`Site ${siteId} not found`);
 
     // Create global permit (siteId = null)
@@ -201,15 +253,23 @@ export class TestScenarios {
     });
 
     // Create parking session
-    const { entry, exit, session } = await this.generator.createParkingSession(siteId, vrm, {
-      durationMinutes: 180,
-    });
+    const { entry, exit, session } = await this.generator.createParkingSession(
+      siteId,
+      vrm,
+      {
+        durationMinutes: 180,
+      },
+    );
 
     // Decision should be COMPLIANT
-    const decision = await this.generator.createDecision(session.id, DecisionOutcome.COMPLIANT, {
-      ruleApplied: 'VALID_PERMIT',
-      rationale: 'Global permit valid at all sites',
-    });
+    const decision = await this.generator.createDecision(
+      session.id,
+      DecisionOutcome.COMPLIANT,
+      {
+        ruleApplied: 'VALID_PERMIT',
+        rationale: 'Global permit valid at all sites',
+      },
+    );
 
     return { vrm, entry, exit, session, permit, decision };
   }
@@ -217,12 +277,17 @@ export class TestScenarios {
   /**
    * Scenario 7: Multiple sessions for same vehicle (same day)
    */
-  async multipleSessionsSameVehicle(siteId: string, count: number = 3): Promise<{
+  async multipleSessionsSameVehicle(
+    siteId: string,
+    count: number = 3,
+  ): Promise<{
     vrm: string;
     sessions: Array<{ entry: any; exit: any; session: any }>;
   }> {
     const vrm = this.generator.generateTestVrm('MULTI');
-    const site = await this.dataSource.getRepository(Site).findOne({ where: { id: siteId } });
+    const site = await this.dataSource
+      .getRepository(Site)
+      .findOne({ where: { id: siteId } });
     if (!site) throw new Error(`Site ${siteId} not found`);
 
     const sessions = [];
@@ -230,14 +295,17 @@ export class TestScenarios {
 
     for (let i = 0; i < count; i++) {
       // Sessions spaced 2 hours apart
-      const entryTime = new Date(now.getTime() - (count - i) * 2 * 60 * 60 * 1000);
+      const entryTime = new Date(
+        now.getTime() - (count - i) * 2 * 60 * 60 * 1000,
+      );
       const exitTime = new Date(entryTime.getTime() + 60 * 60 * 1000); // 1 hour duration
 
-      const { entry, exit, session } = await this.generator.createParkingSession(siteId, vrm, {
-        entryTime,
-        exitTime,
-        durationMinutes: 60,
-      });
+      const { entry, exit, session } =
+        await this.generator.createParkingSession(siteId, vrm, {
+          entryTime,
+          exitTime,
+          durationMinutes: 60,
+        });
 
       sessions.push({ entry, exit, session });
     }
@@ -257,7 +325,15 @@ export class TestScenarios {
     globalPermit: any;
     multipleSessions: any;
   }> {
-    const [compliantWithPayment, compliantWithPermit, enforcementCandidate, withinGracePeriod, paymentExpired, globalPermit, multipleSessions] = await Promise.all([
+    const [
+      compliantWithPayment,
+      compliantWithPermit,
+      enforcementCandidate,
+      withinGracePeriod,
+      paymentExpired,
+      globalPermit,
+      multipleSessions,
+    ] = await Promise.all([
       this.compliantWithPayment(siteId),
       this.compliantWithPermit(siteId),
       this.enforcementCandidate(siteId),

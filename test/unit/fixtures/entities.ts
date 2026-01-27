@@ -1,4 +1,11 @@
-import { Site, Movement, Session, Payment, Permit, Decision } from '../../../src/domain/entities';
+import {
+  Site,
+  Movement,
+  Session,
+  Payment,
+  Permit,
+  Decision,
+} from '../../../src/domain/entities';
 import { SessionStatus, DecisionOutcome } from '../../../src/domain/entities';
 
 export const createTestSite = (overrides?: Partial<Site>): Site => ({
@@ -24,7 +31,9 @@ export const createTestSite = (overrides?: Partial<Site>): Site => ({
   ...overrides,
 });
 
-export const createTestMovement = (overrides?: Partial<Movement>): Movement => ({
+export const createTestMovement = (
+  overrides?: Partial<Movement>,
+): Movement => ({
   id: 'movement-uuid',
   siteId: 'TEST01',
   vrm: 'AB12CDE',
@@ -88,7 +97,9 @@ export const createTestPermit = (overrides?: Partial<Permit>): Permit => ({
   ...overrides,
 });
 
-export const createTestDecision = (overrides?: Partial<Decision>): Decision => ({
+export const createTestDecision = (
+  overrides?: Partial<Decision>,
+): Decision => ({
   id: 'decision-uuid',
   sessionId: 'session-uuid',
   movementId: null,

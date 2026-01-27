@@ -15,16 +15,27 @@ import { HttpModule } from '@nestjs/axios';
 import { IntegrationModule } from '../integration/integration.module';
 
 @Module({
-    imports: [
-        DomainModule,
-        EngineModule, // Provides ReconciliationService
-        AuditModule, // Provides AuditService
-        HttpModule,
-        forwardRef(() => IntegrationModule),
-        TypeOrmModule.forFeature([Movement, Site, Payment, Permit]),
-    ],
-    controllers: [IngestionController, AnprPollerController],
-    providers: [AnprIngestionService, PaymentIngestionService, PermitIngestionService, AnprPollerService, ImageService],
-    exports: [AnprIngestionService, PaymentIngestionService, PermitIngestionService, ImageService],
+  imports: [
+    DomainModule,
+    EngineModule, // Provides ReconciliationService
+    AuditModule, // Provides AuditService
+    HttpModule,
+    forwardRef(() => IntegrationModule),
+    TypeOrmModule.forFeature([Movement, Site, Payment, Permit]),
+  ],
+  controllers: [IngestionController, AnprPollerController],
+  providers: [
+    AnprIngestionService,
+    PaymentIngestionService,
+    PermitIngestionService,
+    AnprPollerService,
+    ImageService,
+  ],
+  exports: [
+    AnprIngestionService,
+    PaymentIngestionService,
+    PermitIngestionService,
+    ImageService,
+  ],
 })
-export class IngestionModule { }
+export class IngestionModule {}

@@ -8,24 +8,24 @@ import { IngestPermitDto } from './dto/ingest-permit.dto';
 
 @Controller('ingestion')
 export class IngestionController {
-    constructor(
-        private readonly anprService: AnprIngestionService,
-        private readonly paymentService: PaymentIngestionService,
-        private readonly permitService: PermitIngestionService,
-    ) { }
+  constructor(
+    private readonly anprService: AnprIngestionService,
+    private readonly paymentService: PaymentIngestionService,
+    private readonly permitService: PermitIngestionService,
+  ) {}
 
-    @Post('anpr')
-    async ingestAnpr(@Body() dto: IngestAnprDto) {
-        return this.anprService.ingest(dto);
-    }
+  @Post('anpr')
+  async ingestAnpr(@Body() dto: IngestAnprDto) {
+    return this.anprService.ingest(dto);
+  }
 
-    @Post('payment')
-    async ingestPayment(@Body() dto: IngestPaymentDto) {
-        return this.paymentService.ingest(dto);
-    }
+  @Post('payment')
+  async ingestPayment(@Body() dto: IngestPaymentDto) {
+    return this.paymentService.ingest(dto);
+  }
 
-    @Post('permit')
-    async ingestPermit(@Body() dto: IngestPermitDto) {
-        return this.permitService.ingest(dto);
-    }
+  @Post('permit')
+  async ingestPermit(@Body() dto: IngestPermitDto) {
+    return this.permitService.ingest(dto);
+  }
 }

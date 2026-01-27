@@ -7,13 +7,13 @@ import { AuditModule } from '../audit/audit.module';
 import { IngestionModule } from '../ingestion/ingestion.module';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([Payment, Site]),
-        AuditModule,
-        IngestionModule,
-    ],
-    providers: [PaymentTrackingService],
-    controllers: [PaymentController],
-    exports: [PaymentTrackingService],
+  imports: [
+    TypeOrmModule.forFeature([Payment, Site]),
+    AuditModule,
+    IngestionModule,
+  ],
+  providers: [PaymentTrackingService],
+  controllers: [PaymentController],
+  exports: [PaymentTrackingService],
 })
-export class PaymentModule { }
+export class PaymentModule {}

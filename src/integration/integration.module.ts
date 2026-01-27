@@ -9,14 +9,14 @@ import { MondayIntegrationService } from './monday-integration.service';
 import { MondayController } from './monday.controller';
 
 @Module({
-    imports: [
-        HttpModule,
-        ConfigModule,
-        ScheduleModule.forRoot(), // Initialize Scheduler
-        TypeOrmModule.forFeature([Site, Permit]),
-    ],
-    controllers: [MondayController],
-    providers: [MondayIntegrationService],
-    exports: [MondayIntegrationService],
+  imports: [
+    HttpModule,
+    ConfigModule,
+    ScheduleModule.forRoot(), // Initialize Scheduler
+    TypeOrmModule.forFeature([Site, Permit]),
+  ],
+  controllers: [MondayController],
+  providers: [MondayIntegrationService],
+  exports: [MondayIntegrationService],
 })
-export class IntegrationModule { }
+export class IntegrationModule {}

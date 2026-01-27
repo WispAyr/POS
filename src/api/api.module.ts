@@ -14,14 +14,21 @@ import { AuditModule } from '../audit/audit.module';
 import { BuildModule } from '../build/build.module';
 
 @Module({
-    imports: [
-        DomainModule,
-        IngestionModule,
-        IntegrationModule,
-        AuditModule,
-        BuildModule,
-        TypeOrmModule.forFeature([Site, Session, Decision, Movement, Permit]),
-    ],
-    controllers: [DashboardController, ImageController, PermitsController, HealthController, AuditController, BuildController],
+  imports: [
+    DomainModule,
+    IngestionModule,
+    IntegrationModule,
+    AuditModule,
+    BuildModule,
+    TypeOrmModule.forFeature([Site, Session, Decision, Movement, Permit]),
+  ],
+  controllers: [
+    DashboardController,
+    ImageController,
+    PermitsController,
+    HealthController,
+    AuditController,
+    BuildController,
+  ],
 })
-export class ApiModule { }
+export class ApiModule {}

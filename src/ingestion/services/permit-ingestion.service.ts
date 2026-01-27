@@ -7,31 +7,31 @@ import { AuditService } from '../../audit/audit.service';
 
 @Injectable()
 export class PermitIngestionService {
-    private readonly logger = new Logger(PermitIngestionService.name);
+  private readonly logger = new Logger(PermitIngestionService.name);
 
-    constructor(
-        @InjectRepository(Permit)
-        private readonly permitRepo: Repository<Permit>,
-        private readonly auditService: AuditService,
-    ) { }
+  constructor(
+    @InjectRepository(Permit)
+    private readonly permitRepo: Repository<Permit>,
+    private readonly auditService: AuditService,
+  ) {}
 
-    async ingest(dto: IngestPermitDto): Promise<Permit> {
-        const permitData: DeepPartial<Permit> = {
-            siteId: dto.siteId || undefined,
-            vrm: dto.vrm.toUpperCase().replace(/\s/g, ''),
-            type: dto.type,
-            startDate: new Date(dto.startDate),
-            endDate: dto.endDate ? new Date(dto.endDate) : (null as any),
-        };
+  async ingest(dto: IngestPermitDto): Promise<Permit> {
+    const permitData: DeepPartial<Permit> = {
+      siteId: dto.siteId || undefined,
+      vrm: dto.vrm.toUpperCase().replace(/\s/g, ''),
+      type: dto.type,
+      startDate: new Date(dto.startDate),
+      endDate: dto.endDate ? new Date(dto.endDate) : (null as any),
+    };
 
-        const permit = this.permitRepo.create(permitData);
-        const saved = await this.permitRepo.save(permit);
+    const permit = this.permitRepo.create(permitData);
+    const saved = await this.permitRepo.save(permit);
 
-        this.logger.log(`Ingested permit: ${saved.id} for VRM ${saved.vrm}`);
+    this.logger.log(`Ingested permit: ${saved.id} for VRM ${saved.vrm}`);
 
-        // Audit log permit ingestion
-        await this.auditService.logPermitIngestion(saved);
+    // Audit log permit ingestion
+    await this.auditService.logPermitIngestion(saved);
 
-        return saved;
-    }
+    return saved;
+  }
 }
