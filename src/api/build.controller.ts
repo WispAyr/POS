@@ -60,4 +60,17 @@ export class BuildController {
             errorMessage: body.status !== 'success' ? `CI workflow ${body.workflow} failed` : undefined,
         });
     }
+
+    @Post('backfill')
+    async triggerBackfill(@Body() body?: { sinceDate?: string; limit?: number; all?: boolean }) {
+        // This endpoint triggers the backfill script
+        // In production, you might want to run this as a background job
+        return {
+            message: 'Backfill should be run via script: ts-node scripts/backfill-build-history.ts',
+            instructions: [
+                'Run: ts-node scripts/backfill-build-history.ts --all',
+                'Or: ts-node scripts/backfill-build-history.ts --since-date=2026-01-01 --limit=100',
+            ],
+        };
+    }
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Trash2, ShieldCheck, ShieldAlert, Calendar, MapPin, X, Loader2 } from 'lucide-react';
+import { Search, Plus, Trash2, ShieldCheck, ShieldAlert, Calendar, MapPin, X, Loader2, ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react';
 
 interface Permit {
     id: string;
@@ -80,6 +80,11 @@ export function PermitsView() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
+    const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+    const toggleCollapse = (siteId: string) => {
+        setCollapsed(prev => ({ ...prev, [siteId]: !prev[siteId] }));
+    };
 
     // Form state
     const [newPermit, setNewPermit] = useState({
@@ -175,14 +180,20 @@ export function PermitsView() {
 
             {/* Permits Table */}
             <div className="space-y-8">
-                {/* Global Permits */}
+                {/* Global Permits (Error State if unexpected) */}
                 {filteredPermits.filter(p => !p.siteId).length > 0 && (
-                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
-                        <div className="bg-purple-50 dark:bg-purple-900/10 px-6 py-3 border-b border-purple-100 dark:border-purple-900/20">
-                            <h3 className="font-semibold text-purple-900 dark:text-purple-300 flex items-center gap-2">
-                                <MapPin className="w-4 h-4" />
-                                Global Permits (All Sites)
+                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-red-200 dark:border-red-900/30 overflow-hidden ring-1 ring-red-100 dark:ring-red-900/20">
+                        <div className="bg-red-50 dark:bg-red-900/10 px-6 py-3 border-b border-red-100 dark:border-red-900/20 flex items-center justify-between">
+                            <h3 className="font-semibold text-red-900 dark:text-red-300 flex items-center gap-2">
+                                <AlertTriangle className="w-4 h-4" />
+                                Unassigned / Global Permits
                             </h3>
+                            <span className="text-xs font-medium px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full">
+                                {filteredPermits.filter(p => !p.siteId).length} Issues
+                            </span>
+                        </div>
+                        <div className="px-6 py-2 bg-red-50/50 dark:bg-red-900/5 border-b border-red-100 dark:border-red-900/20 text-xs text-red-600 dark:text-red-400">
+                            These permits have no Site ID assigned. This may imply a configuration error in Monday.com (check Site ID column).
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
@@ -204,28 +215,45 @@ export function PermitsView() {
                         acc[permit.siteId].push(permit);
                     }
                     return acc;
-                }, {} as Record<string, Permit[]>)).map(sitePermits => {
+                }, {} as Record<string, Permit[]>)).sort((a, b) => {
+                    const siteA = sites.find(s => s.id === a[0].siteId)?.name || '';
+                    const siteB = sites.find(s => s.id === b[0].siteId)?.name || '';
+                    return siteA.localeCompare(siteB);
+                }).map(sitePermits => {
                     const siteId = sitePermits[0].siteId!;
                     const siteName = sites.find(s => s.id === siteId)?.name || siteId;
+                    const isCollapsed = collapsed[siteId];
 
                     return (
                         <div key={siteId} className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
-                            <div className="bg-gray-50 dark:bg-slate-800/50 px-6 py-3 border-b border-gray-100 dark:border-slate-800">
+                            <button
+                                onClick={() => toggleCollapse(siteId)}
+                                className="w-full bg-gray-50 dark:bg-slate-800/50 px-6 py-3 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                            >
                                 <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                                     <MapPin className="w-4 h-4 text-gray-400" />
                                     {siteName}
                                 </h3>
-                            </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left">
-                                    <PermitTableHeader />
-                                    <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-                                        {sitePermits.map(permit => (
-                                            <PermitRow key={permit.id} permit={permit} onDelete={handleDelete} sites={sites} />
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs bg-white dark:bg-slate-900 px-2 py-1 rounded border border-gray-200 dark:border-slate-700 text-gray-500">
+                                        {sitePermits.length}
+                                    </span>
+                                    {isCollapsed ? <ChevronRight className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                                </div>
+                            </button>
+
+                            {!isCollapsed && (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <PermitTableHeader />
+                                        <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+                                            {sitePermits.map(permit => (
+                                                <PermitRow key={permit.id} permit={permit} onDelete={handleDelete} sites={sites} />
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     );
                 })}

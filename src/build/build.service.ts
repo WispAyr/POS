@@ -226,6 +226,8 @@ export class BuildService {
             errorMessage?: string;
             errorDetails?: any;
             duration?: number;
+            version?: VersionInfo;
+            metadata?: any;
         }
     ): Promise<BuildAudit> {
         const buildAudit = await this.buildAuditRepo.findOne({ where: { buildId } });
@@ -253,8 +255,58 @@ export class BuildService {
             buildAudit.errorDetails = options.errorDetails;
         }
 
+        if (options?.version) {
+            buildAudit.version = options.version;
+        }
+
+        if (options?.metadata) {
+            buildAudit.metadata = { ...buildAudit.metadata, ...options.metadata };
+        }
+
         const saved = await this.buildAuditRepo.save(buildAudit);
         this.logger.log(`Build completed: ${buildId} (${status})`);
+        return saved;
+    }
+
+    /**
+     * Create a historical build record (for backfilling)
+     */
+    async createHistoricalBuild(
+        buildId: string,
+        buildType: string,
+        version: VersionInfo,
+        timestamp: Date,
+        options?: {
+            status?: 'SUCCESS' | 'FAILED' | 'CANCELLED';
+            actor?: string;
+            actorType?: string;
+            metadata?: any;
+            dependencies?: DependencyInfo[];
+        }
+    ): Promise<BuildAudit> {
+        // Check if build already exists
+        const existing = await this.buildAuditRepo.findOne({ where: { buildId } });
+        if (existing) {
+            this.logger.log(`Build ${buildId} already exists, skipping`);
+            return existing;
+        }
+
+        const buildAudit = this.buildAuditRepo.create({
+            buildId,
+            buildType,
+            status: options?.status || 'SUCCESS',
+            version,
+            dependencies: options?.dependencies || [],
+            metadata: options?.metadata || {},
+            actor: options?.actor || 'SYSTEM',
+            actorType: options?.actorType || 'SYSTEM',
+            timestamp,
+            completedAt: timestamp,
+            duration: 0,
+        });
+
+        const saved = await this.buildAuditRepo.save(buildAudit);
+        this.logger.log(`Created historical build: ${buildId} (${buildType})`);
         return saved;
     }
 
@@ -330,6 +382,53 @@ export class BuildService {
             .createQueryBuilder('build')
             .orderBy('build.timestamp', 'DESC')
             .getMany();
+    }
+
+    /**
+     * Create a historical build record (for backfilling)
+     */
+    async createHistoricalBuild(
+        buildId: string,
+        buildType: string,
+        version: VersionInfo,
+        timestamp: Date,
+        options?: {
+            status?: 'SUCCESS' | 'FAILED' | 'CANCELLED';
+            actor?: string;
+            actorType?: string;
+            metadata?: any;
+            dependencies?: DependencyInfo[];
+        }
+    ): Promise<BuildAudit> {
+        // Check if build already exists
+        const existing = await this.buildAuditRepo.findOne({ where: { buildId } });
+        if (existing) {
+            this.logger.log(`Build ${buildId} already exists, skipping`);
+            return existing;
+        }
+
+        const dependencies = options?.dependencies || await this.getDependencies();
+
+        const buildAudit = this.buildAuditRepo.create({
+            buildId,
+            buildType,
+            status: options?.status || 'SUCCESS',
+            version,
+            dependencies,
+            metadata: {
+                ...(await this.getBuildMetadata()),
+                ...(options?.metadata || {}),
+            },
+            actor: options?.actor || 'SYSTEM',
+            actorType: options?.actorType || 'SYSTEM',
+            timestamp,
+            completedAt: timestamp,
+            duration: 0,
+        });
+
+        const saved = await this.buildAuditRepo.save(buildAudit);
+        this.logger.log(`Created historical build: ${buildId} (${buildType})`);
+        return saved;
     }
 
     /**
