@@ -1,0 +1,31 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, DeepPartial } from 'typeorm';
+import { Permit } from '../../domain/entities';
+import { IngestPermitDto } from '../dto/ingest-permit.dto';
+
+@Injectable()
+export class PermitIngestionService {
+    private readonly logger = new Logger(PermitIngestionService.name);
+
+    constructor(
+        @InjectRepository(Permit)
+        private readonly permitRepo: Repository<Permit>,
+    ) { }
+
+    async ingest(dto: IngestPermitDto): Promise<Permit> {
+        const permitData: DeepPartial<Permit> = {
+            siteId: dto.siteId || undefined,
+            vrm: dto.vrm.toUpperCase().replace(/\s/g, ''),
+            type: dto.type,
+            startDate: new Date(dto.startDate),
+            endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+        };
+
+        const permit = this.permitRepo.create(permitData);
+        const saved = await this.permitRepo.save(permit);
+
+        this.logger.log(`Ingested permit: ${saved.id} for VRM ${saved.vrm}`);
+        return saved;
+    }
+}
