@@ -391,53 +391,6 @@ export class BuildService {
     }
 
     /**
-     * Create a historical build record (for backfilling)
-     */
-    async createHistoricalBuild(
-        buildId: string,
-        buildType: string,
-        version: VersionInfo,
-        timestamp: Date,
-        options?: {
-            status?: 'SUCCESS' | 'FAILED' | 'CANCELLED';
-            actor?: string;
-            actorType?: string;
-            metadata?: any;
-            dependencies?: DependencyInfo[];
-        }
-    ): Promise<BuildAudit> {
-        // Check if build already exists
-        const existing = await this.buildAuditRepo.findOne({ where: { buildId } });
-        if (existing) {
-            this.logger.log(`Build ${buildId} already exists, skipping`);
-            return existing;
-        }
-
-        const dependencies = options?.dependencies || await this.getDependencies();
-
-        const buildAudit = this.buildAuditRepo.create({
-            buildId,
-            buildType,
-            status: options?.status || 'SUCCESS',
-            version,
-            dependencies,
-            metadata: {
-                ...(await this.getBuildMetadata()),
-                ...(options?.metadata || {}),
-            },
-            actor: options?.actor || 'SYSTEM',
-            actorType: options?.actorType || 'SYSTEM',
-            timestamp,
-            completedAt: timestamp,
-            duration: 0,
-        });
-
-        const saved = await this.buildAuditRepo.save(buildAudit);
-        this.logger.log(`Created historical build: ${buildId} (${buildType})`);
-        return saved;
-    }
-
-    /**
      * Get git commit hash
      */
     private getGitCommit(): string | undefined {
