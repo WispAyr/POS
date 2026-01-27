@@ -220,6 +220,10 @@ describe('PaymentTrackingService', () => {
             const siteId = 'site-1';
             // Use a fixed time that's between the active payment times
             const now = new Date('2026-01-27T12:00:00Z');
+            
+            jest.useFakeTimers();
+            jest.setSystemTime(now);
+
             const activePayment: Payment = {
                 id: 'payment-1',
                 siteId,
@@ -243,10 +247,6 @@ describe('PaymentTrackingService', () => {
                 ingestedAt: new Date(),
             } as Payment;
 
-            // Mock Date.now to return our fixed time
-            const originalDateNow = Date.now;
-            Date.now = jest.fn(() => now.getTime());
-
             mockPaymentRepo.find.mockResolvedValue([activePayment, expiredPayment]);
 
             const result = await service.getPaymentStatus(vrm, siteId);
@@ -259,8 +259,7 @@ describe('PaymentTrackingService', () => {
             expect(result.totalPayments).toBe(2);
             expect(result.nextExpiry).toEqual(activePayment.expiryTime);
 
-            // Restore Date.now
-            Date.now = originalDateNow;
+            jest.useRealTimers();
         });
 
         it('should return hasActivePayment=false when no active payments', async () => {
@@ -339,6 +338,9 @@ describe('PaymentTrackingService', () => {
             const startDate = new Date('2026-01-27T00:00:00Z');
             const endDate = new Date('2026-01-27T23:59:59Z');
 
+            jest.useFakeTimers();
+            jest.setSystemTime(now);
+
             const payments: Payment[] = [
                 {
                     id: 'payment-1',
@@ -375,10 +377,6 @@ describe('PaymentTrackingService', () => {
                 } as Payment,
             ];
 
-            // Mock Date.now to return our fixed time
-            const originalDateNow = Date.now;
-            Date.now = jest.fn(() => now.getTime());
-
             mockPaymentRepo.find.mockResolvedValue(payments);
 
             const result = await service.getPaymentStatistics(siteId, startDate, endDate);
@@ -389,8 +387,7 @@ describe('PaymentTrackingService', () => {
             expect(result.totalRevenue).toBe(15.0); // 5 + 3 + 7
             expect(result.averageAmount).toBe(5.0); // 15 / 3
 
-            // Restore Date.now
-            Date.now = originalDateNow;
+            jest.useRealTimers();
         });
 
         it('should handle empty payments list', async () => {
