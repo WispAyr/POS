@@ -105,44 +105,136 @@ export class MondayIntegrationService {
 
     private async syncWhitelists() {
         // Board: Whitelists (1893468235)
-        // Map: name -> Permit.vrm
-        //      text_mkr3e6as -> Permit.siteId
-        //      date_mkpj4ap1 -> Permit.startDate
-        //      date_mkqeq1q6 -> Permit.endDate
+        const boardId = 1893468235;
+        const items = await this.fetchBoardItems(boardId);
+        const currentMondayIds = new Set(items.map(item => item.id));
 
-        const items = await this.fetchBoardItems(1893468235);
         for (const item of items) {
-            const vrm = item.name;
+            const vrm = item.name?.toUpperCase().replace(/\s/g, '');
             const siteId = item.column_values.find((c: MondayColumnValue) => c.id === 'text_mkr3e6as')?.text;
-            const startDate = item.column_values.find((c: MondayColumnValue) => c.id === 'date_mkpj4ap1')?.text;
-            const endDate = item.column_values.find((c: MondayColumnValue) => c.id === 'date_mkqeq1q6')?.text;
+            const startDateStr = item.column_values.find((c: MondayColumnValue) => c.id === 'date_mkpj4ap1')?.text;
+            const endDateStr = item.column_values.find((c: MondayColumnValue) => c.id === 'date_mkqeq1q6')?.text;
 
-            if (vrm && siteId) {
-                // Simple logic for now: Treat Monday as source of truth. 
-                // We might want to avoid duplicates or update existing based on VRM+Site key.
-
+            if (vrm) {
                 let permit = await this.permitRepo.findOne({
-                    where: { vrm: vrm, siteId: siteId, type: 'WHITELIST' }
+                    where: item.id ? { mondayItemId: item.id } : { vrm, siteId: siteId || undefined }
                 });
 
                 if (!permit) {
-                    permit = this.permitRepo.create({
-                        vrm: vrm,
-                        siteId: siteId,
-                        type: 'WHITELIST'
-                    });
+                    permit = this.permitRepo.create({ vrm, type: 'WHITELIST' });
                 }
 
-                if (startDate) permit.startDate = new Date(startDate);
-                if (endDate) permit.endDate = new Date(endDate);
+                permit.vrm = vrm;
+                permit.siteId = siteId || null;
+                permit.mondayItemId = item.id;
+
+                if (startDateStr) permit.startDate = new Date(startDateStr);
+                else if (!permit.startDate) permit.startDate = new Date();
+
+                if (endDateStr) permit.endDate = new Date(endDateStr);
+                else permit.endDate = null;
 
                 await this.permitRepo.save(permit);
-                this.logger.debug(`Synced Permit: ${vrm} for ${siteId}`);
+                this.logger.debug(`Synced Permit from Monday: ${vrm} (Item ID: ${item.id})`);
+            }
+        }
+
+        // Optional: Delete local permits that were synced from Monday but are no longer there
+        // Note: Only delete if they have a mondayItemId
+        const localPermits = await this.permitRepo.find({ where: { type: 'WHITELIST' } });
+        for (const local of localPermits) {
+            if (local.mondayItemId && !currentMondayIds.has(local.mondayItemId)) {
+                this.logger.log(`Deleting local permit ${local.vrm} as it was removed from Monday (ID: ${local.mondayItemId})`);
+                await this.permitRepo.remove(local);
             }
         }
     }
 
-    // ============ CAMERA CONFIGURATION BOARD ============
+    async pushPermitToMonday(permit: Permit) {
+        const boardId = 1893468235;
+        const columnValues = JSON.stringify({
+            text_mkr3e6as: permit.siteId || "",
+            date_mkpj4ap1: permit.startDate.toISOString().split('T')[0],
+            date_mkqeq1q6: permit.endDate ? permit.endDate.toISOString().split('T')[0] : null,
+        });
+
+        const mutation = `
+            mutation {
+                create_item(
+                    board_id: ${boardId},
+                    item_name: "${permit.vrm}",
+                    column_values: ${JSON.stringify(columnValues)}
+                ) {
+                    id
+                }
+            }
+        `;
+
+        try {
+            const response = await firstValueFrom(
+                this.httpService.post(this.apiUrl, { query: mutation }, { headers: { Authorization: this.apiKey } })
+            );
+            if (response.data.data?.create_item?.id) {
+                permit.mondayItemId = response.data.data.create_item.id;
+                await this.permitRepo.save(permit);
+                this.logger.log(`Pushed permit ${permit.vrm} to Monday (ID: ${permit.mondayItemId})`);
+            }
+        } catch (error) {
+            this.logger.error(`Failed to push permit ${permit.vrm} to Monday`, error);
+        }
+    }
+
+    async updatePermitOnMonday(permit: Permit) {
+        if (!permit.mondayItemId) return this.pushPermitToMonday(permit);
+
+        const boardId = 1893468235;
+        const columnValues = JSON.stringify({
+            text_mkr3e6as: permit.siteId || "",
+            date_mkpj4ap1: permit.startDate.toISOString().split('T')[0],
+            date_mkqeq1q6: permit.endDate ? permit.endDate.toISOString().split('T')[0] : null,
+        });
+
+        const mutation = `
+            mutation {
+                change_multiple_column_values(
+                    board_id: ${boardId},
+                    item_id: ${permit.mondayItemId},
+                    column_values: ${JSON.stringify(columnValues)}
+                ) {
+                    id
+                }
+            }
+        `;
+
+        try {
+            await firstValueFrom(
+                this.httpService.post(this.apiUrl, { query: mutation }, { headers: { Authorization: this.apiKey } })
+            );
+            this.logger.log(`Updated permit ${permit.vrm} on Monday (ID: ${permit.mondayItemId})`);
+        } catch (error) {
+            this.logger.error(`Failed to update permit ${permit.vrm} on Monday`, error);
+        }
+    }
+
+    async deletePermitFromMonday(mondayItemId: string) {
+        const mutation = `
+            mutation {
+                delete_item(item_id: ${mondayItemId}) {
+                    id
+                }
+            }
+        `;
+
+        try {
+            await firstValueFrom(
+                this.httpService.post(this.apiUrl, { query: mutation }, { headers: { Authorization: this.apiKey } })
+            );
+            this.logger.log(`Deleted permit from Monday (ID: ${mondayItemId})`);
+        } catch (error) {
+            // If already deleted on Monday, that's fine
+            this.logger.warn(`Failed to delete permit ${mondayItemId} from Monday`, error);
+        }
+    }
     // Board ID will be stored in env or discovered dynamically
     private cameraConfigBoardId: number | null = null;
 

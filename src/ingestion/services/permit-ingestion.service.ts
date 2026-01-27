@@ -19,7 +19,7 @@ export class PermitIngestionService {
             vrm: dto.vrm.toUpperCase().replace(/\s/g, ''),
             type: dto.type,
             startDate: new Date(dto.startDate),
-            endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+            endDate: dto.endDate ? new Date(dto.endDate) : (null as any),
         };
 
         const permit = this.permitRepo.create(permitData);

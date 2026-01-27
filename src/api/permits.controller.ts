@@ -26,15 +26,15 @@ export class PermitsController {
     }
 
     @Post()
-    async create(@Body() data: Partial<Permit>) {
-        if (data.vrm) {
-            data.vrm = data.vrm.toUpperCase().replace(/\s/g, '');
-        }
-        const permit = this.permitRepo.create({
-            ...data,
-            startDate: data.startDate ? new Date(data.startDate) : new Date(),
-            endDate: data.endDate ? new Date(data.endDate) : null,
-        });
+    async create(@Body() data: any) {
+        const permit = new Permit();
+        permit.vrm = (data.vrm || '').toUpperCase().replace(/\s/g, '');
+        permit.siteId = data.siteId;
+        permit.type = data.type || 'WHITELIST';
+        permit.startDate = data.startDate ? new Date(data.startDate) : new Date();
+        permit.endDate = data.endDate ? new Date(data.endDate) : (null as any);
+        permit.active = data.active !== undefined ? data.active : true;
+
         return this.permitRepo.save(permit);
     }
 

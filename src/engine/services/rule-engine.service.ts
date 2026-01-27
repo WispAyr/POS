@@ -39,6 +39,18 @@ export class RuleEngineService {
         const entryGraceMs = (graceConfig.entry || 10) * 60000;
         const exitGraceMs = (graceConfig.exit || 10) * 60000;
 
+        // If session is not completed (no endTime), check grace period only
+        if (!session.endTime) {
+            // For provisional sessions, we can't evaluate payment yet
+            // Check if duration (if calculated) is within grace
+            const duration = session.durationMinutes || 0;
+            if (duration <= (graceConfig.entry || 10) + (graceConfig.exit || 10)) {
+                return this.recordDecision(session, DecisionOutcome.COMPLIANT, 'WITHIN_GRACE', `Duration ${duration} within grace`);
+            }
+            // Can't determine enforcement without end time
+            return this.recordDecision(session, DecisionOutcome.REQUIRES_REVIEW, 'INCOMPLETE_SESSION', 'Session not completed, cannot evaluate');
+        }
+
         // The period during which the vehicle MUST have a valid payment
         const mandatoryStart = new Date(session.startTime.getTime() + entryGraceMs);
         const mandatoryEnd = new Date(session.endTime.getTime() - exitGraceMs);

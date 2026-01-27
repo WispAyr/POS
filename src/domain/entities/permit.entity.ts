@@ -7,7 +7,7 @@ export class Permit {
     id: string;
 
     @Column({ nullable: true }) // Null = Global
-    siteId: string;
+    siteId: string | null;
 
     @Column()
     vrm: string;
@@ -19,10 +19,13 @@ export class Permit {
     startDate: Date;
 
     @Column({ type: 'timestamp', nullable: true })
-    endDate: Date; // Null = Indefinite
+    endDate: Date | null; // Null = Indefinite
 
     @Column({ default: true })
     active: boolean;
+
+    @Column({ nullable: true })
+    mondayItemId: string;
 
     @CreateDateColumn()
     createdAt: Date;

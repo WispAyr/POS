@@ -4,6 +4,7 @@ import { SitesList } from './components/SitesList';
 import { EnforcementReview } from './components/EnforcementReview';
 import { EventsView } from './components/EventsView';
 import { SettingsView } from './components/SettingsView';
+import { PermitsView } from './components/PermitsView';
 import { LayoutDashboard, Map as MapIcon, Users, Settings, ShieldAlert, Camera, Sun, Moon } from 'lucide-react';
 
 function App() {
@@ -68,7 +69,10 @@ function App() {
             <Camera className="w-5 h-5" />
             Events
           </button>
-          <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg font-medium transition-colors">
+          <button
+            onClick={() => setCurrentView('permits')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'permits' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+          >
             <Users className="w-5 h-5" />
             Permits
           </button>
@@ -90,7 +94,8 @@ function App() {
               {currentView === 'dashboard' ? 'Dashboard' :
                 currentView === 'sites' ? 'Sites Management' :
                   currentView === 'events' ? 'ANPR Events' :
-                    currentView === 'settings' ? 'System Settings' : 'Enforcement Review'}
+                    currentView === 'permits' ? 'Permits & Whitelist' :
+                      currentView === 'settings' ? 'System Settings' : 'Enforcement Review'}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 mt-1 transition-colors">Real-time parking operations overview</p>
           </div>
@@ -114,6 +119,7 @@ function App() {
           {currentView === 'sites' && <SitesList />}
           {currentView === 'enforcement' && <EnforcementReview />}
           {currentView === 'events' && <EventsView />}
+          {currentView === 'permits' && <PermitsView />}
           {currentView === 'settings' && <SettingsView />}
         </div>
       </main>
