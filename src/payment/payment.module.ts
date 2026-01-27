@@ -4,11 +4,13 @@ import { Payment, Site } from '../domain/entities';
 import { PaymentTrackingService } from './payment-tracking.service';
 import { PaymentController } from './payment.controller';
 import { AuditModule } from '../audit/audit.module';
+import { IngestionModule } from '../ingestion/ingestion.module';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([Payment, Site]),
         AuditModule,
+        IngestionModule,
     ],
     providers: [PaymentTrackingService],
     controllers: [PaymentController],

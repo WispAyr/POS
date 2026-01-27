@@ -135,6 +135,16 @@ export class PaymentTrackingService {
             order: { expiryTime: 'DESC' },
         });
 
+        if (!allPayments || allPayments.length === 0) {
+            return {
+                vrm: normalizedVrm,
+                siteId,
+                hasActivePayment: false,
+                activePayments: [],
+                totalPayments: 0,
+            };
+        }
+
         // Filter active payments
         const activePayments = allPayments.filter(
             p => p.startTime <= now && p.expiryTime >= now

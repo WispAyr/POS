@@ -34,40 +34,98 @@ export class MondayIntegrationService {
     }
 
     private async fetchBoardItems(boardId: number): Promise<MondayItem[] | null> {
-        const query = `
-      query {
-        boards(ids: [${boardId}]) {
-          items_page(limit: 500) {
-            items {
-              id
-              name
-              column_values {
-                id
-                text
-                value
-              }
-            }
-          }
-        }
-      }
-    `;
+        let allItems: MondayItem[] = [];
+        let cursor: string | null = null;
+        let hasMore = true;
 
         try {
-            const response = await firstValueFrom(
+            // Initial fetch
+            const initialQuery = `
+                query {
+                    boards(ids: [${boardId}]) {
+                        items_page(limit: 500) {
+                            cursor
+                            items {
+                                id
+                                name
+                                column_values {
+                                    id
+                                    text
+                                    value
+                                }
+                            }
+                        }
+                    }
+                }
+            `;
+
+            const initialResponse = await firstValueFrom(
                 this.httpService.post(
                     this.apiUrl,
-                    { query },
+                    { query: initialQuery },
                     { headers: { Authorization: this.apiKey } },
                 ),
             );
 
-            if (response.data.errors) {
-                this.logger.error('GraphQL Errors', response.data.errors);
+            if (initialResponse.data.errors) {
+                this.logger.error('GraphQL Errors', initialResponse.data.errors);
                 return null;
             }
 
-            const boardData = response.data.data.boards[0] as MondayBoardData;
-            return boardData?.items_page?.items || [];
+            const boardData = initialResponse.data.data.boards[0];
+            const itemsPage = boardData?.items_page;
+
+            if (itemsPage) {
+                allItems = [...itemsPage.items];
+                cursor = itemsPage.cursor;
+            } else {
+                hasMore = false;
+            }
+
+            // Pagination loop
+            while (hasMore && cursor) {
+                this.logger.log(`Fetching next page of items for board ${boardId}...`);
+                const nextQuery = `
+                    query {
+                        next_items_page(limit: 500, cursor: "${cursor}") {
+                            cursor
+                            items {
+                                id
+                                name
+                                column_values {
+                                    id
+                                    text
+                                    value
+                                }
+                            }
+                        }
+                    }
+                `;
+
+                const nextResponse = await firstValueFrom(
+                    this.httpService.post(
+                        this.apiUrl,
+                        { query: nextQuery },
+                        { headers: { Authorization: this.apiKey } },
+                    ),
+                );
+
+                if (nextResponse.data.errors) {
+                    this.logger.error('GraphQL Errors during pagination', nextResponse.data.errors);
+                    break;
+                }
+
+                const nextData = nextResponse.data.data.next_items_page;
+                if (nextData) {
+                    allItems = [...allItems, ...nextData.items];
+                    cursor = nextData.cursor;
+                    if (!cursor) hasMore = false;
+                } else {
+                    hasMore = false;
+                }
+            }
+
+            return allItems;
         } catch (error) {
             this.logger.error(`Failed to fetch board ${boardId}`, error);
             return null;
@@ -87,7 +145,7 @@ export class MondayIntegrationService {
             const siteIdCol = item.column_values.find((c: MondayColumnValue) => c.id === 'text_mkt4k6yt');
             const statusCol = item.column_values.find((c: MondayColumnValue) => c.id === 'color_mkpjp7nb');
 
-            const siteId = siteIdCol?.text;
+            const siteId = siteIdCol?.text?.trim();
             const isActive = statusCol?.text === 'Active';
 
             if (siteId && isActive) {
@@ -120,7 +178,14 @@ export class MondayIntegrationService {
 
         for (const item of items) {
             const vrm = item.name?.toUpperCase().replace(/\s/g, '');
-            const siteId = item.column_values.find((c: MondayColumnValue) => c.id === 'text_mkr3e6as')?.text;
+            let siteId = item.column_values.find((c: MondayColumnValue) => c.id === 'text_mkr3e6as')?.text;
+
+            // Allow cleaning up the value if it looks like a quoted string which sometimes happens in raw value returns
+            if (siteId) {
+                siteId = siteId.trim().replace(/^"|"$/g, '');
+                if (siteId === '') siteId = undefined;
+            }
+
             const startDateStr = item.column_values.find((c: MondayColumnValue) => c.id === 'date_mkpj4ap1')?.text;
             const endDateStr = item.column_values.find((c: MondayColumnValue) => c.id === 'date_mkqeq1q6')?.text;
 

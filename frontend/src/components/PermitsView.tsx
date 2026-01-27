@@ -16,6 +16,62 @@ interface Site {
     name: string;
 }
 
+const PermitTableHeader = () => (
+    <thead>
+        <tr className="bg-gray-50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800">
+            <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">VRM</th>
+            <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Site</th>
+            <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+            <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Expires</th>
+            <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+            <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Actions</th>
+        </tr>
+    </thead>
+);
+
+const PermitRow = ({ permit, onDelete, sites }: { permit: Permit; onDelete: (id: string) => void; sites: Site[] }) => (
+    <tr className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+        <td className="px-6 py-4">
+            <span className="font-mono font-bold text-gray-900 dark:text-white">{permit.vrm}</span>
+        </td>
+        <td className="px-6 py-4">
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <MapPin className="w-3 h-3 text-gray-400" />
+                {permit.siteId ? sites.find(s => s.id === permit.siteId)?.name || 'Unknown' : 'Global (All Sites)'}
+            </div>
+        </td>
+        <td className="px-6 py-4">
+            <span className="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded text-xs font-bold">
+                {permit.type}
+            </span>
+        </td>
+        <td className="px-6 py-4">
+            <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300">
+                <Calendar className="w-3 h-3 text-gray-400" />
+                {permit.endDate ? new Date(permit.endDate).toLocaleDateString() : 'Indefinite'}
+            </div>
+        </td>
+        <td className="px-6 py-4">
+            {permit.active && (!permit.endDate || new Date(permit.endDate) > new Date()) ? (
+                <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 text-xs font-bold">
+                    <ShieldCheck className="w-3 h-3" /> Active
+                </span>
+            ) : (
+                <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-xs font-bold">
+                    <ShieldAlert className="w-3 h-3" /> Expired
+                </span>
+            )}
+        </td>
+        <td className="px-6 py-4 text-right">
+            <button
+                onClick={() => onDelete(permit.id)}
+                className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+            >
+                <Trash2 className="w-4 h-4" />
+            </button>
+        </td>
+    </tr>
+);
 const API_BASE = 'http://localhost:3001';
 
 export function PermitsView() {
@@ -118,80 +174,67 @@ export function PermitsView() {
             </div>
 
             {/* Permits Table */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="bg-gray-50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800">
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">VRM</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Site</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Expires</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-                            {loading ? (
-                                [...Array(5)].map((_, i) => (
-                                    <tr key={i} className="animate-pulse">
-                                        <td colSpan={6} className="px-6 py-4"><div className="h-4 bg-gray-100 dark:bg-slate-800 rounded w-full"></div></td>
-                                    </tr>
-                                ))
-                            ) : filteredPermits.length === 0 ? (
-                                <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                                        No permits found
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredPermits.map(permit => (
-                                    <tr key={permit.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <span className="font-mono font-bold text-gray-900 dark:text-white">{permit.vrm}</span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                                                <MapPin className="w-3 h-3 text-gray-400" />
-                                                {permit.siteId ? sites.find(s => s.id === permit.siteId)?.name || 'Unknown' : 'Global (All Sites)'}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded text-xs font-bold">
-                                                {permit.type}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300">
-                                                <Calendar className="w-3 h-3 text-gray-400" />
-                                                {permit.endDate ? new Date(permit.endDate).toLocaleDateString() : 'Indefinite'}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {permit.active && (!permit.endDate || new Date(permit.endDate) > new Date()) ? (
-                                                <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 text-xs font-bold">
-                                                    <ShieldCheck className="w-3 h-3" /> Active
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-xs font-bold">
-                                                    <ShieldAlert className="w-3 h-3" /> Expired
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button
-                                                onClick={() => handleDelete(permit.id)}
-                                                className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+            <div className="space-y-8">
+                {/* Global Permits */}
+                {filteredPermits.filter(p => !p.siteId).length > 0 && (
+                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
+                        <div className="bg-purple-50 dark:bg-purple-900/10 px-6 py-3 border-b border-purple-100 dark:border-purple-900/20">
+                            <h3 className="font-semibold text-purple-900 dark:text-purple-300 flex items-center gap-2">
+                                <MapPin className="w-4 h-4" />
+                                Global Permits (All Sites)
+                            </h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <PermitTableHeader />
+                                <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+                                    {filteredPermits.filter(p => !p.siteId).map(permit => (
+                                        <PermitRow key={permit.id} permit={permit} onDelete={handleDelete} sites={sites} />
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* Site Specific Permits */}
+                {Object.values(filteredPermits.reduce((acc, permit) => {
+                    if (permit.siteId) {
+                        if (!acc[permit.siteId]) acc[permit.siteId] = [];
+                        acc[permit.siteId].push(permit);
+                    }
+                    return acc;
+                }, {} as Record<string, Permit[]>)).map(sitePermits => {
+                    const siteId = sitePermits[0].siteId!;
+                    const siteName = sites.find(s => s.id === siteId)?.name || siteId;
+
+                    return (
+                        <div key={siteId} className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
+                            <div className="bg-gray-50 dark:bg-slate-800/50 px-6 py-3 border-b border-gray-100 dark:border-slate-800">
+                                <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <MapPin className="w-4 h-4 text-gray-400" />
+                                    {siteName}
+                                </h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <PermitTableHeader />
+                                    <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+                                        {sitePermits.map(permit => (
+                                            <PermitRow key={permit.id} permit={permit} onDelete={handleDelete} sites={sites} />
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    );
+                })}
+
+                {filteredPermits.length === 0 && !loading && (
+                    <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                        No permits found matching your search.
+                    </div>
+                )}
             </div>
 
             {/* Add Modal */}

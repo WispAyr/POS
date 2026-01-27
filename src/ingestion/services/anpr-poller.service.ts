@@ -28,10 +28,10 @@ export class AnprPollerService {
     }
 
     @Cron(CronExpression.EVERY_5_MINUTES)
-    async pollEvents(hours?: number, limit?: number, offset?: number): Promise<{ processed: number; new: number; updated: number }> {
+    async pollEvents(hours?: number, limit?: number, offset?: number): Promise<{ processed: number; new: number; updated: number; errors: number }> {
         if (this.isPolling) {
             this.logger.warn('Poll already in progress, skipping...');
-            return { processed: 0, new: 0, updated: 0 };
+            return { processed: 0, new: 0, updated: 0, errors: 0 };
         }
         this.isPolling = true;
 
@@ -63,7 +63,7 @@ export class AnprPollerService {
                 this.logger.log(`Fetched ${events.length} events from ANPR source (Total available: ${data.total || 'unknown'})`);
 
                 if (events.length === 0) {
-                    return { processed: 0, new: 0, updated: 0 };
+                    return { processed: 0, new: 0, updated: 0, errors: 0 };
                 }
 
                 let ingestedNew = 0;
@@ -71,6 +71,10 @@ export class AnprPollerService {
                 let errorCount = 0;
 
                 const allSites = await this.siteRepo.find();
+                if (allSites.length === 0) {
+                    this.logger.error('CRITICAL: No sites found in database! ANPR sync will fail to map any events. Please sync sites from Monday.com first.');
+                    return { processed: events.length, new: 0, updated: 0, errors: events.length };
+                }
                 this.logger.debug(`Cached ${allSites.length} sites for mapping`);
 
                 const BATCH_SIZE = 5;
@@ -86,6 +90,12 @@ export class AnprPollerService {
                             dto.siteId = await this.deriveSiteIdFromCamera(cameraId, allSites);
                         } else {
                             dto.siteId = 'UNKNOWN';
+                        }
+
+                        if (dto.siteId === 'UNKNOWN') {
+                            this.logger.warn(`Could not map camera ${cameraId} to any site. Skipping event.`);
+                            errorCount++;
+                            return;
                         }
 
                         dto.cameraId = cameraId;
@@ -110,6 +120,7 @@ export class AnprPollerService {
 
                         if (!dto.plateNumber) {
                             this.logger.warn(`Skipping event with missing VRM: ${JSON.stringify(event).slice(0, 100)}`);
+                            errorCount++;
                             return;
                         }
 
@@ -128,15 +139,16 @@ export class AnprPollerService {
                 return {
                     processed: events.length,
                     new: ingestedNew,
-                    updated: ingestedUpdated
+                    updated: ingestedUpdated,
+                    errors: errorCount
                 };
             } else {
                 this.logger.warn('Unexpected response format from ANPR source: ' + JSON.stringify(data).slice(0, 200));
-                return { processed: 0, new: 0, updated: 0 };
+                return { processed: 0, new: 0, updated: 0, errors: 0 };
             }
         } catch (error) {
             this.logger.error(`Error during ANPR poll: ${error.message}`);
-            return { processed: 0, new: 0, updated: 0 };
+            return { processed: 0, new: 0, updated: 0, errors: 0 };
         } finally {
             this.isPolling = false;
         }

@@ -74,7 +74,7 @@ export function SettingsView() {
 
             if (response.ok) {
                 const countMsg = data.processed !== undefined
-                    ? ` - ${data.new} new, ${data.updated} updated (${data.processed} total)`
+                    ? ` - ${data.new} new, ${data.updated} updated${data.errors ? `, ${data.errors} errors` : ''} (${data.processed} total)`
                     : data.count !== undefined ? ` - ${data.count} items processed` : '';
 
                 const statusMsg = `Completed in ${duration}s${countMsg}`;
