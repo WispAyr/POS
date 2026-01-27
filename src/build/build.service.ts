@@ -291,13 +291,19 @@ export class BuildService {
             return existing;
         }
 
+        const dependencies = options?.dependencies || await this.getDependencies();
+        const metadata = {
+            ...(await this.getBuildMetadata()),
+            ...(options?.metadata || {}),
+        };
+
         const buildAudit = this.buildAuditRepo.create({
             buildId,
             buildType,
             status: options?.status || 'SUCCESS',
             version,
-            dependencies: options?.dependencies || [],
-            metadata: options?.metadata || {},
+            dependencies,
+            metadata,
             actor: options?.actor || 'SYSTEM',
             actorType: options?.actorType || 'SYSTEM',
             timestamp,
