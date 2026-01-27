@@ -3,6 +3,8 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 
 @Entity('payments')
 @Index(['vrm', 'siteId'])
 @Index(['expiryTime'])
+@Index(['siteId', 'startTime', 'expiryTime']) // For active payment queries
+@Index(['siteId', 'expiryTime']) // For expiring payments queries
 export class Payment {
     @PrimaryGeneratedColumn('uuid')
     id: string;

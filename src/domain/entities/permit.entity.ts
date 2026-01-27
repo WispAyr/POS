@@ -6,7 +6,7 @@ export class Permit {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column({ nullable: true }) // Null = Global
+    @Column({ type: 'text', nullable: true }) // Null = Global
     siteId: string | null;
 
     @Column()
@@ -24,7 +24,7 @@ export class Permit {
     @Column({ default: true })
     active: boolean;
 
-    @Column({ nullable: true })
+    @Column({ type: 'text', nullable: true })
     mondayItemId: string;
 
     @CreateDateColumn()
