@@ -33,7 +33,6 @@ export interface VersionInfo {
 @Index(['version'])
 @Index(['buildType', 'timestamp'])
 @Index(['status', 'timestamp'])
-@Index(['gitCommit'])
 export class BuildAudit {
     @PrimaryGeneratedColumn('uuid')
     id: string;

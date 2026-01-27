@@ -5,7 +5,9 @@ import { EnforcementReview } from './components/EnforcementReview';
 import { EventsView } from './components/EventsView';
 import { SettingsView } from './components/SettingsView';
 import { PermitsView } from './components/PermitsView';
-import { LayoutDashboard, Map as MapIcon, Users, Settings, ShieldAlert, Camera, Sun, Moon } from 'lucide-react';
+import { AuditView } from './components/AuditView';
+import { BuildAuditView } from './components/BuildAuditView';
+import { LayoutDashboard, Map as MapIcon, Users, Settings, ShieldAlert, Camera, Sun, Moon, FileSearch, Package } from 'lucide-react';
 
 function App() {
   const [currentView, setCurrentView] = useState('dashboard');
@@ -77,6 +79,20 @@ function App() {
             Permits
           </button>
           <button
+            onClick={() => setCurrentView('audit')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'audit' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+          >
+            <FileSearch className="w-5 h-5" />
+            Audit Trail
+          </button>
+          <button
+            onClick={() => setCurrentView('build')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'build' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+          >
+            <Package className="w-5 h-5" />
+            Build History
+          </button>
+          <button
             onClick={() => setCurrentView('settings')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'settings' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
           >
@@ -95,7 +111,9 @@ function App() {
                 currentView === 'sites' ? 'Sites Management' :
                   currentView === 'events' ? 'ANPR Events' :
                     currentView === 'permits' ? 'Permits & Whitelist' :
-                      currentView === 'settings' ? 'System Settings' : 'Enforcement Review'}
+                      currentView === 'audit' ? 'Audit Trail' :
+                        currentView === 'build' ? 'Build History & Version' :
+                          currentView === 'settings' ? 'System Settings' : 'Enforcement Review'}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 mt-1 transition-colors">Real-time parking operations overview</p>
           </div>
@@ -120,6 +138,8 @@ function App() {
           {currentView === 'enforcement' && <EnforcementReview />}
           {currentView === 'events' && <EventsView />}
           {currentView === 'permits' && <PermitsView />}
+          {currentView === 'audit' && <AuditView />}
+          {currentView === 'build' && <BuildAuditView />}
           {currentView === 'settings' && <SettingsView />}
         </div>
       </main>
