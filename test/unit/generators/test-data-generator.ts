@@ -1,5 +1,13 @@
 import { DataSource, Repository } from 'typeorm';
-import { Site, Movement, Session, Payment, Permit, Decision, AuditLog } from '../../../src/domain/entities';
+import {
+  Site,
+  Movement,
+  Session,
+  Payment,
+  Permit,
+  Decision,
+  AuditLog,
+} from '../../../src/domain/entities';
 import { SessionStatus, DecisionOutcome } from '../../../src/domain/entities';
 
 /**
@@ -74,7 +82,7 @@ export class TestDataGenerator {
     siteId: string,
     vrm: string,
     timestamp?: Date,
-    overrides?: Partial<Movement>
+    overrides?: Partial<Movement>,
   ): Promise<Movement> {
     const repo = this.dataSource.getRepository(Movement);
     const movement = repo.create({
@@ -109,7 +117,7 @@ export class TestDataGenerator {
     siteId: string,
     vrm: string,
     timestamp?: Date,
-    overrides?: Partial<Movement>
+    overrides?: Partial<Movement>,
   ): Promise<Movement> {
     const repo = this.dataSource.getRepository(Movement);
     const movement = repo.create({
@@ -147,17 +155,21 @@ export class TestDataGenerator {
       entryTime?: Date;
       exitTime?: Date;
       durationMinutes?: number;
-    } = {}
+    } = {},
   ): Promise<{ entry: Movement; exit: Movement; session: Session }> {
-    const entryTime = options.entryTime || new Date(Date.now() - (options.durationMinutes || 60) * 60 * 1000);
+    const entryTime =
+      options.entryTime ||
+      new Date(Date.now() - (options.durationMinutes || 60) * 60 * 1000);
     const exitTime = options.exitTime || new Date();
 
     const entry = await this.createEntryMovement(siteId, vrm, entryTime);
     const exit = await this.createExitMovement(siteId, vrm, exitTime);
 
     const sessionRepo = this.dataSource.getRepository(Session);
-    const durationMinutes = options.durationMinutes || Math.floor((exitTime.getTime() - entryTime.getTime()) / 60000);
-    
+    const durationMinutes =
+      options.durationMinutes ||
+      Math.floor((exitTime.getTime() - entryTime.getTime()) / 60000);
+
     const session = sessionRepo.create({
       siteId,
       vrm,
@@ -188,12 +200,14 @@ export class TestDataGenerator {
       expiryTime?: Date;
       durationHours?: number;
       source?: string;
-    } = {}
+    } = {},
   ): Promise<Payment> {
     const repo = this.dataSource.getRepository(Payment);
     const startTime = options.startTime || new Date(Date.now() - 3600000); // 1 hour ago
     const durationHours = options.durationHours || 2;
-    const expiryTime = options.expiryTime || new Date(startTime.getTime() + durationHours * 3600000);
+    const expiryTime =
+      options.expiryTime ||
+      new Date(startTime.getTime() + durationHours * 3600000);
 
     const payment = repo.create({
       siteId,
@@ -223,7 +237,7 @@ export class TestDataGenerator {
       startDate?: Date;
       endDate?: Date | null;
       active?: boolean;
-    } = {}
+    } = {},
   ): Promise<Permit> {
     const repo = this.dataSource.getRepository(Permit);
     const permit = repo.create({
@@ -249,7 +263,7 @@ export class TestDataGenerator {
       rationale?: string;
       status?: string;
       movementId?: string;
-    } = {}
+    } = {},
   ): Promise<Decision> {
     const repo = this.dataSource.getRepository(Decision);
     const decision = repo.create({
@@ -293,7 +307,9 @@ export class TestDataGenerator {
     decision?: Decision;
   }> {
     const vrm = scenario.vrm || this.generateTestVrm('SCENARIO');
-    const site = await this.dataSource.getRepository(Site).findOne({ where: { id: scenario.siteId } });
+    const site = await this.dataSource
+      .getRepository(Site)
+      .findOne({ where: { id: scenario.siteId } });
     if (!site) {
       throw new Error(`Site ${scenario.siteId} not found`);
     }
@@ -318,7 +334,9 @@ export class TestDataGenerator {
       const paymentDurationHours = scenario.paymentCoversDuration
         ? Math.ceil(durationMinutes / 60) + 1 // Cover duration + buffer
         : Math.floor(durationMinutes / 60) - 1; // Less than duration (invalid)
-      const paymentExpiryTime = new Date(paymentStartTime.getTime() + paymentDurationHours * 3600000);
+      const paymentExpiryTime = new Date(
+        paymentStartTime.getTime() + paymentDurationHours * 3600000,
+      );
 
       payment = await this.createPayment(scenario.siteId, vrm, {
         startTime: paymentStartTime,
@@ -327,24 +345,41 @@ export class TestDataGenerator {
     }
 
     // Create parking session
-    const { entry, exit, session } = await this.createParkingSession(scenario.siteId, vrm, {
-      entryTime,
-      exitTime,
-      durationMinutes,
-    });
+    const { entry, exit, session } = await this.createParkingSession(
+      scenario.siteId,
+      vrm,
+      {
+        entryTime,
+        exitTime,
+        durationMinutes,
+      },
+    );
 
     // Decision will be created by rule engine, but we can create one for testing
     let decision: Decision | undefined;
-    if (scenario.gracePeriodExceeded && !scenario.hasPayment && !scenario.hasPermit) {
-      decision = await this.createDecision(session.id, DecisionOutcome.ENFORCEMENT_CANDIDATE, {
-        ruleApplied: 'NO_VALID_PAYMENT',
-        rationale: 'Test scenario: No payment or permit, exceeds grace period',
-      });
+    if (
+      scenario.gracePeriodExceeded &&
+      !scenario.hasPayment &&
+      !scenario.hasPermit
+    ) {
+      decision = await this.createDecision(
+        session.id,
+        DecisionOutcome.ENFORCEMENT_CANDIDATE,
+        {
+          ruleApplied: 'NO_VALID_PAYMENT',
+          rationale:
+            'Test scenario: No payment or permit, exceeds grace period',
+        },
+      );
     } else if (scenario.hasPermit || scenario.hasPayment) {
-      decision = await this.createDecision(session.id, DecisionOutcome.COMPLIANT, {
-        ruleApplied: scenario.hasPermit ? 'VALID_PERMIT' : 'VALID_PAYMENT',
-        rationale: `Test scenario: ${scenario.hasPermit ? 'Permit' : 'Payment'} exists`,
-      });
+      decision = await this.createDecision(
+        session.id,
+        DecisionOutcome.COMPLIANT,
+        {
+          ruleApplied: scenario.hasPermit ? 'VALID_PERMIT' : 'VALID_PAYMENT',
+          rationale: `Test scenario: ${scenario.hasPermit ? 'Permit' : 'Payment'} exists`,
+        },
+      );
     }
 
     return {
@@ -369,15 +404,17 @@ export class TestDataGenerator {
       mixCompliantAndEnforcement?: boolean;
       paymentRatio?: number; // 0-1, ratio of scenarios with payment
       permitRatio?: number; // 0-1, ratio of scenarios with permit
-    } = {}
-  ): Promise<Array<{
-    vrm: string;
-    entry: Movement;
-    exit: Movement;
-    session: Session;
-    payment?: Payment;
-    permit?: Permit;
-  }>> {
+    } = {},
+  ): Promise<
+    Array<{
+      vrm: string;
+      entry: Movement;
+      exit: Movement;
+      session: Session;
+      payment?: Payment;
+      permit?: Permit;
+    }>
+  > {
     const scenarios = [];
     const paymentRatio = options.paymentRatio || 0.5;
     const permitRatio = options.permitRatio || 0.3;
@@ -386,7 +423,9 @@ export class TestDataGenerator {
       const hasPayment = Math.random() < paymentRatio;
       const hasPermit = Math.random() < permitRatio;
       const durationMinutes = options.mixCompliantAndEnforcement
-        ? (hasPayment || hasPermit ? 30 : 120) // Short if compliant, long if enforcement
+        ? hasPayment || hasPermit
+          ? 30
+          : 120 // Short if compliant, long if enforcement
         : 60;
 
       const scenario = await this.generateParkingScenario({

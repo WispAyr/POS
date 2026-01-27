@@ -1,7 +1,7 @@
 /**
  * Example test file demonstrating how to use the test data generator
  * to create parking events and test payment, whitelist, and enforcement systems
- * 
+ *
  * Copy this file and adapt for your actual tests
  */
 
@@ -11,7 +11,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../../src/app.module';
 import { getTestDbConfig } from '../setup/test-db.config';
-import { TestDataGenerator, TestDataCleanup, TestScenarios } from '../unit/generators';
+import {
+  TestDataGenerator,
+  TestDataCleanup,
+  TestScenarios,
+} from '../unit/generators';
 import { Site, DecisionOutcome } from '../../src/domain/entities';
 
 describe('Parking Events - Payment, Whitelist, and Enforcement Tests', () => {
@@ -24,10 +28,7 @@ describe('Parking Events - Payment, Whitelist, and Enforcement Tests', () => {
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [
-        AppModule,
-        TypeOrmModule.forRoot(getTestDbConfig()),
-      ],
+      imports: [AppModule, TypeOrmModule.forRoot(getTestDbConfig())],
     }).compile();
 
     app = module.createNestApplication();
@@ -70,7 +71,9 @@ describe('Parking Events - Payment, Whitelist, and Enforcement Tests', () => {
 
       expect(scenario.payment).toBeDefined();
       expect(scenario.session.durationMinutes).toBeGreaterThan(30); // Session longer than payment
-      expect(scenario.decision.outcome).toBe(DecisionOutcome.ENFORCEMENT_CANDIDATE);
+      expect(scenario.decision.outcome).toBe(
+        DecisionOutcome.ENFORCEMENT_CANDIDATE,
+      );
     });
 
     it('should handle multiple payments for same vehicle', async () => {
@@ -90,11 +93,15 @@ describe('Parking Events - Payment, Whitelist, and Enforcement Tests', () => {
       });
 
       // Create session that should be covered by second payment
-      const { session } = await generator.createParkingSession(testSite.id, vrm, {
-        entryTime: payment1.startTime,
-        exitTime: new Date(payment1.startTime.getTime() + 90 * 60 * 1000), // 90 minutes
-        durationMinutes: 90,
-      });
+      const { session } = await generator.createParkingSession(
+        testSite.id,
+        vrm,
+        {
+          entryTime: payment1.startTime,
+          exitTime: new Date(payment1.startTime.getTime() + 90 * 60 * 1000), // 90 minutes
+          durationMinutes: 90,
+        },
+      );
 
       expect(payment1).toBeDefined();
       expect(payment2).toBeDefined();
@@ -133,9 +140,13 @@ describe('Parking Events - Payment, Whitelist, and Enforcement Tests', () => {
       });
 
       // Create session
-      const { session } = await generator.createParkingSession(testSite.id, vrm, {
-        durationMinutes: 60,
-      });
+      const { session } = await generator.createParkingSession(
+        testSite.id,
+        vrm,
+        {
+          durationMinutes: 60,
+        },
+      );
 
       expect(permit.endDate).toBeDefined();
       expect(permit.endDate!.getTime()).toBeLessThan(Date.now());
@@ -152,9 +163,13 @@ describe('Parking Events - Payment, Whitelist, and Enforcement Tests', () => {
       });
 
       // Create session
-      const { session } = await generator.createParkingSession(testSite.id, vrm, {
-        durationMinutes: 120,
-      });
+      const { session } = await generator.createParkingSession(
+        testSite.id,
+        vrm,
+        {
+          durationMinutes: 120,
+        },
+      );
 
       expect(permit.active).toBe(false);
       expect(session).toBeDefined();
@@ -165,7 +180,9 @@ describe('Parking Events - Payment, Whitelist, and Enforcement Tests', () => {
     it('should create enforcement candidate when no payment or permit', async () => {
       const scenario = await scenarios.enforcementCandidate(testSite.id);
 
-      expect(scenario.decision.outcome).toBe(DecisionOutcome.ENFORCEMENT_CANDIDATE);
+      expect(scenario.decision.outcome).toBe(
+        DecisionOutcome.ENFORCEMENT_CANDIDATE,
+      );
       expect(scenario.decision.status).toBe('NEW');
       expect(scenario.decision.ruleApplied).toBe('NO_VALID_PAYMENT');
       expect(scenario.session.durationMinutes).toBeGreaterThan(20); // Exceeds grace period
@@ -180,17 +197,21 @@ describe('Parking Events - Payment, Whitelist, and Enforcement Tests', () => {
     });
 
     it('should handle multiple enforcement candidates', async () => {
-      const scenarios = await generator.generateMultipleScenarios(testSite.id, 5, {
-        mixCompliantAndEnforcement: true,
-        paymentRatio: 0.2, // 20% with payment
-        permitRatio: 0.1, // 10% with permit
-      });
+      const scenarios = await generator.generateMultipleScenarios(
+        testSite.id,
+        5,
+        {
+          mixCompliantAndEnforcement: true,
+          paymentRatio: 0.2, // 20% with payment
+          permitRatio: 0.1, // 10% with permit
+        },
+      );
 
       expect(scenarios).toHaveLength(5);
 
       // Count enforcement candidates (those without payment or permit)
       const enforcementCount = scenarios.filter(
-        s => !s.payment && !s.permit
+        (s) => !s.payment && !s.permit,
       ).length;
 
       expect(enforcementCount).toBeGreaterThan(0);
@@ -199,7 +220,10 @@ describe('Parking Events - Payment, Whitelist, and Enforcement Tests', () => {
 
   describe('Complex Scenarios', () => {
     it('should handle multiple sessions for same vehicle', async () => {
-      const scenario = await scenarios.multipleSessionsSameVehicle(testSite.id, 3);
+      const scenario = await scenarios.multipleSessionsSameVehicle(
+        testSite.id,
+        3,
+      );
 
       expect(scenario.sessions).toHaveLength(3);
       expect(scenario.sessions[0].session.vrm).toBe(scenario.vrm);
@@ -231,11 +255,15 @@ describe('Parking Events - Payment, Whitelist, and Enforcement Tests', () => {
       });
 
       // Create session that starts before payment
-      const { session } = await generator.createParkingSession(testSite.id, vrm, {
-        entryTime,
-        exitTime: new Date(),
-        durationMinutes: 120,
-      });
+      const { session } = await generator.createParkingSession(
+        testSite.id,
+        vrm,
+        {
+          entryTime,
+          exitTime: new Date(),
+          durationMinutes: 120,
+        },
+      );
 
       // Payment should not cover the full session
       expect(payment.startTime.getTime()).toBeGreaterThan(entryTime.getTime());

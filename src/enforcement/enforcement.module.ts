@@ -7,13 +7,13 @@ import { EnforcementController } from './enforcement.controller';
 import { EnforcementService } from './services/enforcement.service';
 
 @Module({
-    imports: [
-        DomainModule,
-        AuditModule, // Provides AuditService
-        TypeOrmModule.forFeature([Decision]),
-    ],
-    controllers: [EnforcementController],
-    providers: [EnforcementService],
-    exports: [EnforcementService],
+  imports: [
+    DomainModule,
+    AuditModule, // Provides AuditService
+    TypeOrmModule.forFeature([Decision]),
+  ],
+  controllers: [EnforcementController],
+  providers: [EnforcementService],
+  exports: [EnforcementService],
 })
-export class EnforcementModule { }
+export class EnforcementModule {}

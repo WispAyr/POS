@@ -9,6 +9,6 @@ export const getTestDbConfig = (): TypeOrmModuleOptions => ({
   database: process.env.TEST_DB_DATABASE || 'pos_test_db',
   autoLoadEntities: true,
   synchronize: true, // Only for tests - recreates schema
-  dropSchema: true,  // Clean between test runs
-  logging: false,    // Set to true for debugging
+  dropSchema: true, // Clean between test runs
+  logging: false, // Set to true for debugging
 });

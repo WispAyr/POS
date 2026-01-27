@@ -1,4 +1,10 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('sites')
 export class Site {
@@ -19,8 +25,8 @@ export class Site {
     cameras?: {
       id: string;
       direction?: 'ENTRY' | 'EXIT' | 'INTERNAL'; // Legacy: fixed direction
-      towardsDirection?: 'ENTRY' | 'EXIT';  // What "Towards" motion means for this camera
-      awayDirection?: 'ENTRY' | 'EXIT';     // What "Away" motion means for this camera
+      towardsDirection?: 'ENTRY' | 'EXIT'; // What "Towards" motion means for this camera
+      awayDirection?: 'ENTRY' | 'EXIT'; // What "Away" motion means for this camera
       name?: string;
     }[];
     realTime?: boolean;

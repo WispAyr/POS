@@ -1,5 +1,13 @@
 import { DataSource, Repository } from 'typeorm';
-import { Movement, Session, Payment, Permit, Decision, AuditLog, Site } from '../../../src/domain/entities';
+import {
+  Movement,
+  Session,
+  Payment,
+  Permit,
+  Decision,
+  AuditLog,
+  Site,
+} from '../../../src/domain/entities';
 
 /**
  * Utility to clean up test data from the database
@@ -220,7 +228,7 @@ export class TestDataCleanup {
     const testAuditLogs = await repo
       .createQueryBuilder('audit')
       .where("audit.details->>'isTest' = :isTest", { isTest: 'true' })
-      .orWhere("audit.entityId LIKE :prefix", { prefix: `${this.testPrefix}%` })
+      .orWhere('audit.entityId LIKE :prefix', { prefix: `${this.testPrefix}%` })
       .getMany();
     const count = testAuditLogs.length;
     if (count > 0) {
@@ -263,34 +271,39 @@ export class TestDataCleanup {
     const decisionRepo = this.dataSource.getRepository(Decision);
     const siteRepo = this.dataSource.getRepository(Site);
 
-    const [movements, sessions, payments, permits, decisions, sites] = await Promise.all([
-      movementRepo
-        .createQueryBuilder('movement')
-        .where("movement.rawData->>'isTest' = :isTest", { isTest: 'true' })
-        .orWhere('movement.vrm LIKE :prefix', { prefix: `${this.testPrefix}%` })
-        .getCount(),
-      sessionRepo
-        .createQueryBuilder('session')
-        .where('session.vrm LIKE :prefix', { prefix: `${this.testPrefix}%` })
-        .getCount(),
-      paymentRepo
-        .createQueryBuilder('payment')
-        .where("payment.rawData->>'isTest' = :isTest", { isTest: 'true' })
-        .orWhere('payment.vrm LIKE :prefix', { prefix: `${this.testPrefix}%` })
-        .getCount(),
-      permitRepo
-        .createQueryBuilder('permit')
-        .where('permit.vrm LIKE :prefix', { prefix: `${this.testPrefix}%` })
-        .getCount(),
-      decisionRepo
-        .createQueryBuilder('decision')
-        .where("decision.params->>'isTest' = :isTest", { isTest: 'true' })
-        .getCount(),
-      siteRepo
-        .createQueryBuilder('site')
-        .where('site.id LIKE :prefix', { prefix: `${this.testPrefix}%` })
-        .getCount(),
-    ]);
+    const [movements, sessions, payments, permits, decisions, sites] =
+      await Promise.all([
+        movementRepo
+          .createQueryBuilder('movement')
+          .where("movement.rawData->>'isTest' = :isTest", { isTest: 'true' })
+          .orWhere('movement.vrm LIKE :prefix', {
+            prefix: `${this.testPrefix}%`,
+          })
+          .getCount(),
+        sessionRepo
+          .createQueryBuilder('session')
+          .where('session.vrm LIKE :prefix', { prefix: `${this.testPrefix}%` })
+          .getCount(),
+        paymentRepo
+          .createQueryBuilder('payment')
+          .where("payment.rawData->>'isTest' = :isTest", { isTest: 'true' })
+          .orWhere('payment.vrm LIKE :prefix', {
+            prefix: `${this.testPrefix}%`,
+          })
+          .getCount(),
+        permitRepo
+          .createQueryBuilder('permit')
+          .where('permit.vrm LIKE :prefix', { prefix: `${this.testPrefix}%` })
+          .getCount(),
+        decisionRepo
+          .createQueryBuilder('decision')
+          .where("decision.params->>'isTest' = :isTest", { isTest: 'true' })
+          .getCount(),
+        siteRepo
+          .createQueryBuilder('site')
+          .where('site.id LIKE :prefix', { prefix: `${this.testPrefix}%` })
+          .getCount(),
+      ]);
 
     return { movements, sessions, payments, permits, decisions, sites };
   }
