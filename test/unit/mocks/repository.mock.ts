@@ -1,0 +1,32 @@
+import { Repository } from 'typeorm';
+
+export const createMockRepository = <T>(): Partial<Repository<T>> => ({
+  findOne: jest.fn(),
+  find: jest.fn(),
+  findAndCount: jest.fn(),
+  create: jest.fn(),
+  save: jest.fn(),
+  update: jest.fn(),
+  delete: jest.fn(),
+  remove: jest.fn(),
+  count: jest.fn(),
+  createQueryBuilder: jest.fn(() => ({
+    select: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orWhere: jest.fn().mockReturnThis(),
+    innerJoin: jest.fn().mockReturnThis(),
+    innerJoinAndSelect: jest.fn().mockReturnThis(),
+    leftJoin: jest.fn().mockReturnThis(),
+    leftJoinAndSelect: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    take: jest.fn().mockReturnThis(),
+    getMany: jest.fn(),
+    getManyAndCount: jest.fn(),
+    getOne: jest.fn(),
+    getRawMany: jest.fn(),
+    getRawOne: jest.fn(),
+    execute: jest.fn(),
+  })),
+});

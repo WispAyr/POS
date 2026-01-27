@@ -42,8 +42,8 @@ export class Decision {
     @Column({ nullable: true })
     operatorId: string;
 
-    @CreateDateColumn()
-    params: Date;
+    @Column({ type: 'jsonb', nullable: true })
+    params: any;
 
     @CreateDateColumn()
     createdAt: Date;

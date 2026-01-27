@@ -6,6 +6,7 @@
 logs
 *.log
 npm-debug.log*
+pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
@@ -21,29 +22,31 @@ lerna-debug.log*
 /.idea
 .project
 .classpath
-.cproject
-.settings
-/.vscode
-*.sublime-project
+.c9/
+*.launch
+.settings/
 *.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 
 # Environment
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*.local
 
-# Uploads/Data
+# Uploads
 /uploads
-/data
-*.sqlite
+!/uploads/.gitkeep
 
-# Frontend specific
+# Test database
+/test-db
+
+# Frontend
 /frontend/dist
-/frontend/node_modules
-/frontend/.env.local
-
-# Brain / Artifacts
-.gemini/
-brain/
+/frontend/.vite
+/frontend/coverage
