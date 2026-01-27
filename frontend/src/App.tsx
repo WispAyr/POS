@@ -7,7 +7,8 @@ import { SettingsView } from './components/SettingsView';
 import { PermitsView } from './components/PermitsView';
 import { AuditView } from './components/AuditView';
 import { BuildAuditView } from './components/BuildAuditView';
-import { LayoutDashboard, Map as MapIcon, Users, Settings, ShieldAlert, Camera, Sun, Moon, FileSearch, Package } from 'lucide-react';
+import { PaymentTrackingView } from './components/PaymentTrackingView';
+import { LayoutDashboard, Map as MapIcon, Users, Settings, ShieldAlert, Camera, Sun, Moon, FileSearch, Package, CreditCard } from 'lucide-react';
 
 function App() {
   const [currentView, setCurrentView] = useState('dashboard');
@@ -93,6 +94,13 @@ function App() {
             Build History
           </button>
           <button
+            onClick={() => setCurrentView('payments')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'payments' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+          >
+            <CreditCard className="w-5 h-5" />
+            Payment Tracking
+          </button>
+          <button
             onClick={() => setCurrentView('settings')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'settings' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
           >
@@ -113,7 +121,8 @@ function App() {
                     currentView === 'permits' ? 'Permits & Whitelist' :
                       currentView === 'audit' ? 'Audit Trail' :
                         currentView === 'build' ? 'Build History & Version' :
-                          currentView === 'settings' ? 'System Settings' : 'Enforcement Review'}
+                          currentView === 'payments' ? 'Payment Tracking' :
+                            currentView === 'settings' ? 'System Settings' : 'Enforcement Review'}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 mt-1 transition-colors">Real-time parking operations overview</p>
           </div>
@@ -140,6 +149,7 @@ function App() {
           {currentView === 'permits' && <PermitsView />}
           {currentView === 'audit' && <AuditView />}
           {currentView === 'build' && <BuildAuditView />}
+          {currentView === 'payments' && <PaymentTrackingView />}
           {currentView === 'settings' && <SettingsView />}
         </div>
       </main>
