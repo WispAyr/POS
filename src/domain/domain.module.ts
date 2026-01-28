@@ -9,6 +9,8 @@ import {
   Payment,
   Permit,
   BuildAudit,
+  VehicleNote,
+  VehicleMarker,
 } from './entities';
 
 @Module({
@@ -22,6 +24,8 @@ import {
       Payment,
       Permit,
       BuildAudit,
+      VehicleNote,
+      VehicleMarker,
     ]),
   ],
   exports: [TypeOrmModule],
