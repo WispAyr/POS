@@ -8,7 +8,8 @@ import { PermitsView } from './components/PermitsView';
 import { AuditView } from './components/AuditView';
 import { BuildAuditView } from './components/BuildAuditView';
 import { PaymentTrackingView } from './components/PaymentTrackingView';
-import { LayoutDashboard, Map as MapIcon, Users, Settings, ShieldAlert, Camera, Sun, Moon, FileSearch, Package, CreditCard } from 'lucide-react';
+import { UpdateView } from './components/UpdateView';
+import { LayoutDashboard, Map as MapIcon, Users, Settings, ShieldAlert, Camera, Sun, Moon, FileSearch, Package, CreditCard, Download } from 'lucide-react';
 
 function App() {
   const [currentView, setCurrentView] = useState('dashboard');
@@ -107,6 +108,13 @@ function App() {
             <Settings className="w-5 h-5" />
             Settings
           </button>
+          <button
+            onClick={() => setCurrentView('update')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'update' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+          >
+            <Download className="w-5 h-5" />
+            System Update
+          </button>
         </nav>
       </aside>
 
@@ -122,7 +130,8 @@ function App() {
                       currentView === 'audit' ? 'Audit Trail' :
                         currentView === 'build' ? 'Build History & Version' :
                           currentView === 'payments' ? 'Payment Tracking' :
-                            currentView === 'settings' ? 'System Settings' : 'Enforcement Review'}
+                            currentView === 'settings' ? 'System Settings' :
+                              currentView === 'update' ? 'System Update' : 'Enforcement Review'}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 mt-1 transition-colors">Real-time parking operations overview</p>
           </div>
@@ -151,6 +160,7 @@ function App() {
           {currentView === 'build' && <BuildAuditView />}
           {currentView === 'payments' && <PaymentTrackingView />}
           {currentView === 'settings' && <SettingsView />}
+          {currentView === 'update' && <UpdateView />}
         </div>
       </main>
     </div>

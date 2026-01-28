@@ -8,6 +8,7 @@ import { PermitsController } from './permits.controller';
 import { HealthController } from './health.controller';
 import { AuditController } from './audit.controller';
 import { BuildController } from './build.controller';
+import { UpdateController } from './update.controller';
 import { IngestionModule } from '../ingestion/ingestion.module';
 import { IntegrationModule } from '../integration/integration.module';
 import { AuditModule } from '../audit/audit.module';
@@ -29,6 +30,7 @@ import { BuildModule } from '../build/build.module';
     HealthController,
     AuditController,
     BuildController,
+    UpdateController,
   ],
 })
 export class ApiModule {}
