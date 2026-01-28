@@ -21,7 +21,10 @@
     "test:integration": "jest --config ./test/jest-integration.json",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:all": "npm run test && npm run test:integration && npm run test:e2e",
-    "backfill:builds": "ts-node scripts/backfill-build-history.ts"
+    "backfill:builds": "ts-node scripts/backfill-build-history.ts",
+    "review:prs": "ts-node scripts/pr-review-agent.ts",
+    "review:pr": "ts-node scripts/pr-review-agent.ts --pr",
+    "review:dry-run": "ts-node scripts/pr-review-agent.ts --dry-run"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",
