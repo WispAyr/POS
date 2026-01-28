@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ReconciliationService } from './reconciliation.service';
 import { RuleEngineService } from './rule-engine.service';
+import { AuditService } from '../../audit/audit.service';
 import { Session, Decision, DecisionOutcome } from '../../domain/entities';
 import { SessionStatus } from '../../domain/entities';
 import { createMockRepository } from '../../../test/unit/mocks/repository.mock';
@@ -16,6 +17,7 @@ describe('ReconciliationService', () => {
   let sessionRepo: Repository<Session>;
   let decisionRepo: Repository<Decision>;
   let ruleEngine: RuleEngineService;
+  let auditService: AuditService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -35,6 +37,17 @@ describe('ReconciliationService', () => {
             evaluateSession: jest.fn(),
           },
         },
+        {
+          provide: AuditService,
+          useValue: {
+            logReconciliationTrigger: jest
+              .fn()
+              .mockResolvedValue({ id: 'audit-1' }),
+            logDecisionReconciliation: jest
+              .fn()
+              .mockResolvedValue({ id: 'audit-2' }),
+          },
+        },
       ],
     }).compile();
 
@@ -42,6 +55,7 @@ describe('ReconciliationService', () => {
     sessionRepo = module.get(getRepositoryToken(Session));
     decisionRepo = module.get(getRepositoryToken(Decision));
     ruleEngine = module.get<RuleEngineService>(RuleEngineService);
+    auditService = module.get<AuditService>(AuditService);
   });
 
   afterEach(() => {

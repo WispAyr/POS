@@ -12,7 +12,7 @@ export class ImageController {
   }
 
   @Get(':filename')
-  async getImage(@Param('filename') filename: string, @Res() res: Response) {
+  getImage(@Param('filename') filename: string, @Res() res: Response) {
     // Sanitize filename to prevent directory traversal
     const sanitizedFilename = path.basename(filename);
     const filepath = path.join(this.uploadDir, sanitizedFilename);

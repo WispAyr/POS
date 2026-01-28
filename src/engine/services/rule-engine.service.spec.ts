@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RuleEngineService } from './rule-engine.service';
+import { AuditService } from '../../audit/audit.service';
 import {
   Decision,
   DecisionOutcome,
@@ -25,6 +26,7 @@ describe('RuleEngineService', () => {
   let paymentRepo: Repository<Payment>;
   let permitRepo: Repository<Permit>;
   let siteRepo: Repository<Site>;
+  let auditService: AuditService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -46,6 +48,13 @@ describe('RuleEngineService', () => {
           provide: getRepositoryToken(Site),
           useValue: createMockRepository<Site>(),
         },
+        {
+          provide: AuditService,
+          useValue: {
+            getAuditTrailByEntity: jest.fn().mockResolvedValue([]),
+            logDecisionCreation: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+          },
+        },
       ],
     }).compile();
 
@@ -54,6 +63,7 @@ describe('RuleEngineService', () => {
     paymentRepo = module.get(getRepositoryToken(Payment));
     permitRepo = module.get(getRepositoryToken(Permit));
     siteRepo = module.get(getRepositoryToken(Site));
+    auditService = module.get<AuditService>(AuditService);
   });
 
   afterEach(() => {

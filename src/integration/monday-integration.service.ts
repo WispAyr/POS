@@ -5,7 +5,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { firstValueFrom } from 'rxjs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
-import { Site, Permit } from '../domain/entities';
+import { Site, Permit, PermitType } from '../domain/entities';
 import {
   MondayBoardData,
   MondayItem,
@@ -229,7 +229,7 @@ export class MondayIntegrationService {
         }
 
         if (!permit) {
-          permit = this.permitRepo.create({ vrm, type: 'WHITELIST' });
+          permit = this.permitRepo.create({ vrm, type: PermitType.WHITELIST });
         }
 
         permit.vrm = vrm;
@@ -253,7 +253,7 @@ export class MondayIntegrationService {
     // Optional: Delete local permits that were synced from Monday but are no longer there
     // Note: Only delete if they have a mondayItemId
     const localPermits = await this.permitRepo.find({
-      where: { type: 'WHITELIST' },
+      where: { type: PermitType.WHITELIST },
     });
     for (const local of localPermits) {
       if (local.mondayItemId && !currentMondayIds.has(local.mondayItemId)) {
@@ -268,7 +268,7 @@ export class MondayIntegrationService {
     // These are WHITELIST permits with NO siteId and NO mondayItemId.
     // User reports these as "Issues" and they should not exist.
     const zombies = await this.permitRepo.find({
-      where: { type: 'WHITELIST', siteId: IsNull(), mondayItemId: IsNull() },
+      where: { type: PermitType.WHITELIST, siteId: IsNull(), mondayItemId: IsNull() },
     });
     if (zombies.length > 0) {
       this.logger.log(`Cleaning up ${zombies.length} zombie global permits...`);

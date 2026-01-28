@@ -6,6 +6,13 @@ import {
   Index,
 } from 'typeorm';
 
+export enum PermitType {
+  WHITELIST = 'WHITELIST',
+  RESIDENT = 'RESIDENT',
+  STAFF = 'STAFF',
+  CONTRACTOR = 'CONTRACTOR',
+}
+
 @Entity('permits')
 @Index(['vrm'])
 export class Permit {
@@ -18,8 +25,8 @@ export class Permit {
   @Column()
   vrm: string;
 
-  @Column()
-  type: string; // 'WHITELIST', 'RESIDENT', 'STAFF', 'CONTRACTOR'
+  @Column({ type: 'varchar', default: PermitType.WHITELIST })
+  type: PermitType;
 
   @Column({ type: 'timestamp' })
   startDate: Date;

@@ -49,7 +49,8 @@ export class AnprPollerService {
 
     try {
       const pollHours = hours ?? 24;
-      const pollLimit = limit ?? 100;
+      // Reduced default limit due to large responses with embedded base64 images
+      const pollLimit = limit ?? 10;
       const pollOffset = offset ?? 0;
 
       this.logger.log(
@@ -63,7 +64,12 @@ export class AnprPollerService {
             hours: pollHours,
             offset: pollOffset,
           },
-          timeout: 60000,
+          timeout: 120000,
+          headers: {
+            'Accept-Encoding': 'identity', // Disable compression to avoid brotli issues
+          },
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
         }),
       ).catch((err) => {
         this.logger.error(
@@ -219,11 +225,16 @@ export class AnprPollerService {
       const response = await firstValueFrom(
         this.httpService.get(this.baseUrl, {
           params: {
-            limit: 100,
+            limit: 10,
             hours: 24,
             offset: 0,
           },
-          timeout: 30000,
+          timeout: 120000,
+          headers: {
+            'Accept-Encoding': 'identity',
+          },
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
         }),
       );
 

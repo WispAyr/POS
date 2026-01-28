@@ -76,9 +76,7 @@ export class BuildController {
   }
 
   @Post('backfill')
-  async triggerBackfill(
-    @Body() body?: { sinceDate?: string; limit?: number; all?: boolean },
-  ) {
+  triggerBackfill() {
     // This endpoint triggers the backfill script
     // In production, you might want to run this as a background job
     return {

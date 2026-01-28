@@ -21,7 +21,8 @@
     "test:integration": "jest --config ./test/jest-integration.json",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:all": "npm run test && npm run test:integration && npm run test:e2e",
-    "backfill:builds": "ts-node scripts/backfill-build-history.ts"
+    "backfill:builds": "ts-node scripts/backfill-build-history.ts",
+    "fix-sessions": "ts-node scripts/fix-negative-durations.ts"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",
@@ -40,6 +41,9 @@
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.28",
     "uuid": "^13.0.0"
+  },
+  "overrides": {
+    "lodash": "4.17.23"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

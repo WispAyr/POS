@@ -6,4 +6,5 @@ export * from './audit-log.entity';
 export * from './payment.entity';
 export * from './permit.entity';
 export * from './build-audit.entity';
-export * from './build-audit.entity';
+export * from './vehicle-note.entity';
+export * from './vehicle-marker.entity';

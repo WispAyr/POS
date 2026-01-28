@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { SessionService } from './session.service';
 import { RuleEngineService } from './rule-engine.service';
+import { AuditService } from '../../audit/audit.service';
 import { Session, Movement, SessionStatus } from '../../domain/entities';
 import { createMockRepository } from '../../../test/unit/mocks/repository.mock';
 import {
@@ -16,6 +17,7 @@ describe('SessionService', () => {
   let sessionRepo: Repository<Session>;
   let movementRepo: Repository<Movement>;
   let ruleEngine: RuleEngineService;
+  let auditService: AuditService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -35,6 +37,14 @@ describe('SessionService', () => {
             evaluateSession: jest.fn(),
           },
         },
+        {
+          provide: AuditService,
+          useValue: {
+            getAuditTrailByEntity: jest.fn().mockResolvedValue([]),
+            logSessionCreation: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+            logSessionCompletion: jest.fn().mockResolvedValue({ id: 'audit-2' }),
+          },
+        },
       ],
     }).compile();
 
@@ -42,6 +52,7 @@ describe('SessionService', () => {
     sessionRepo = module.get(getRepositoryToken(Session));
     movementRepo = module.get(getRepositoryToken(Movement));
     ruleEngine = module.get<RuleEngineService>(RuleEngineService);
+    auditService = module.get<AuditService>(AuditService);
   });
 
   afterEach(() => {

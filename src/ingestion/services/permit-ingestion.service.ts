@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DeepPartial } from 'typeorm';
-import { Permit } from '../../domain/entities';
+import { Permit, PermitType } from '../../domain/entities';
 import { IngestPermitDto } from '../dto/ingest-permit.dto';
 import { AuditService } from '../../audit/audit.service';
 
@@ -19,7 +19,7 @@ export class PermitIngestionService {
     const permitData: DeepPartial<Permit> = {
       siteId: dto.siteId || undefined,
       vrm: dto.vrm.toUpperCase().replace(/\s/g, ''),
-      type: dto.type,
+      type: dto.type as PermitType,
       startDate: new Date(dto.startDate),
       endDate: dto.endDate ? new Date(dto.endDate) : (null as any),
     };

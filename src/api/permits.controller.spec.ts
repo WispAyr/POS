@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, UpdateResult, DeleteResult } from 'typeorm';
 import { PermitsController } from './permits.controller';
-import { Permit } from '../domain/entities';
+import { Permit, PermitType } from '../domain/entities';
 import { MondayIntegrationService } from '../integration/monday-integration.service';
 import { createMockRepository } from '../../test/unit/mocks/repository.mock';
 import { createTestPermit } from '../../test/unit/fixtures/entities';
@@ -101,14 +101,14 @@ describe('PermitsController', () => {
       const permitData = {
         vrm: 'new permit',
         siteId: 'SITE01',
-        type: 'WHITELIST',
+        type: PermitType.WHITELIST,
         startDate: '2026-01-27T10:00:00Z',
       };
 
       const savedPermit = createTestPermit({
         vrm: 'NEWPERMIT',
         siteId: 'SITE01',
-        type: 'WHITELIST',
+        type: PermitType.WHITELIST,
       });
 
       jest.spyOn(permitRepo, 'save').mockResolvedValue(savedPermit);
@@ -131,12 +131,12 @@ describe('PermitsController', () => {
       // Arrange
       const permitData = {
         vrm: 'staff permit',
-        type: 'STAFF',
+        type: PermitType.STAFF,
       };
 
       const savedPermit = createTestPermit({
         vrm: 'STAFFPERMIT',
-        type: 'STAFF',
+        type: PermitType.STAFF,
       });
 
       jest.spyOn(permitRepo, 'save').mockResolvedValue(savedPermit);
@@ -153,7 +153,7 @@ describe('PermitsController', () => {
       // Arrange
       const permitData = {
         vrm: 'abc 123 def',
-        type: 'WHITELIST',
+        type: PermitType.WHITELIST,
       };
 
       const savedPermit = createTestPermit({ vrm: 'ABC123DEF' });
@@ -174,7 +174,7 @@ describe('PermitsController', () => {
       // Arrange
       const permitData = {
         vrm: 'GLOBAL01',
-        type: 'WHITELIST',
+        type: PermitType.WHITELIST,
       };
 
       const savedPermit = createTestPermit({
@@ -199,13 +199,13 @@ describe('PermitsController', () => {
       const updateData = { active: false };
       const updatedPermit = createTestPermit({
         id: permitId,
-        type: 'WHITELIST',
+        type: PermitType.WHITELIST,
         active: false,
       });
 
       jest
         .spyOn(permitRepo, 'update')
-        .mockResolvedValue({ affected: 1 } as any);
+        .mockResolvedValue({ affected: 1 } as UpdateResult);
       jest.spyOn(permitRepo, 'findOne').mockResolvedValue(updatedPermit);
       jest
         .spyOn(mondayService, 'updatePermitOnMonday')
@@ -230,7 +230,7 @@ describe('PermitsController', () => {
 
       jest
         .spyOn(permitRepo, 'update')
-        .mockResolvedValue({ affected: 1 } as any);
+        .mockResolvedValue({ affected: 1 } as UpdateResult);
       jest.spyOn(permitRepo, 'findOne').mockResolvedValue(updatedPermit);
 
       // Act
@@ -249,14 +249,14 @@ describe('PermitsController', () => {
       const permitId = 'permit-id';
       const permit = createTestPermit({
         id: permitId,
-        type: 'WHITELIST',
+        type: PermitType.WHITELIST,
         mondayItemId: 'monday-123',
       });
 
       jest.spyOn(permitRepo, 'findOne').mockResolvedValue(permit);
       jest
         .spyOn(permitRepo, 'delete')
-        .mockResolvedValue({ affected: 1 } as any);
+        .mockResolvedValue({ affected: 1 } as DeleteResult);
       jest
         .spyOn(mondayService, 'deletePermitFromMonday')
         .mockResolvedValue(undefined);
@@ -277,14 +277,14 @@ describe('PermitsController', () => {
       const permitId = 'permit-id';
       const permit = createTestPermit({
         id: permitId,
-        type: 'STAFF',
+        type: PermitType.STAFF,
         mondayItemId: 'monday-123',
       });
 
       jest.spyOn(permitRepo, 'findOne').mockResolvedValue(permit);
       jest
         .spyOn(permitRepo, 'delete')
-        .mockResolvedValue({ affected: 1 } as any);
+        .mockResolvedValue({ affected: 1 } as DeleteResult);
 
       // Act
       const result = await controller.remove(permitId);
@@ -299,14 +299,14 @@ describe('PermitsController', () => {
       const permitId = 'permit-id';
       const permit = createTestPermit({
         id: permitId,
-        type: 'WHITELIST',
-        mondayItemId: null as any,
+        type: PermitType.WHITELIST,
+        mondayItemId: null,
       });
 
       jest.spyOn(permitRepo, 'findOne').mockResolvedValue(permit);
       jest
         .spyOn(permitRepo, 'delete')
-        .mockResolvedValue({ affected: 1 } as any);
+        .mockResolvedValue({ affected: 1 } as DeleteResult);
 
       // Act
       const result = await controller.remove(permitId);

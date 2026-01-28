@@ -9,7 +9,7 @@ interface SyncStatus {
     progress?: number;
 }
 
-const API_BASE = 'http://localhost:3001';
+const API_BASE = 'http://localhost:3000';
 
 export function SettingsView() {
     const [anprSync, setAnprSync] = useState<SyncStatus>({ isRunning: false });

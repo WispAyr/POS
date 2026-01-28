@@ -32,7 +32,7 @@ interface EventsResponse {
     };
 }
 
-const API_BASE = 'http://localhost:3001';
+const API_BASE = 'http://localhost:3000';
 
 export function EventsView() {
     const [events, setEvents] = useState<EventData[]>([]);

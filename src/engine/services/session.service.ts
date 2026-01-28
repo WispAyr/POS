@@ -73,12 +73,22 @@ export class SessionService {
     });
 
     if (openSession) {
-      openSession.exitMovementId = movement.id;
-      openSession.endTime = movement.timestamp;
-      openSession.durationMinutes = Math.floor(
+      const durationMinutes = Math.floor(
         (movement.timestamp.getTime() - openSession.startTime.getTime()) /
           60000,
       );
+
+      // Validate timestamp - exit must be after entry
+      if (durationMinutes < 0) {
+        this.logger.warn(
+          `Exit timestamp (${movement.timestamp}) is before entry timestamp (${openSession.startTime}) for session ${openSession.id}. Treating as orphan exit.`,
+        );
+        return; // Don't close the session with invalid data
+      }
+
+      openSession.exitMovementId = movement.id;
+      openSession.endTime = movement.timestamp;
+      openSession.durationMinutes = durationMinutes;
       openSession.status = SessionStatus.COMPLETED;
 
       const savedSession = await this.sessionRepo.save(openSession);
