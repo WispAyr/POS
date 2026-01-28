@@ -7,7 +7,6 @@ import {
   Logger,
 } from '@nestjs/common';
 import { execSync, spawn } from 'child_process';
-import * as path from 'path';
 
 interface UpdateStatus {
   currentCommit: string;
@@ -146,8 +145,12 @@ export class UpdateController {
         );
       }
 
-      // Perform git pull
-      const pullOutput = execSync('git pull origin', {
+      // Get current branch and commit before pull
+      const currentBranch = this.getCurrentBranch();
+      const beforePullCommit = this.getCurrentCommit();
+
+      // Perform git pull on the current branch
+      const pullOutput = execSync(`git pull origin ${currentBranch}`, {
         cwd: this.projectRoot,
         encoding: 'utf-8',
         timeout: 60000,
@@ -156,12 +159,16 @@ export class UpdateController {
 
       this.logger.log(`Git pull completed: ${pullOutput}`);
 
-      // Check if package.json changed (need to reinstall deps)
-      const changedFiles = execSync('git diff --name-only HEAD~1 HEAD 2>/dev/null || echo ""', {
-        cwd: this.projectRoot,
-        encoding: 'utf-8',
-        stdio: 'pipe',
-      }).trim();
+      // Check if package.json changed (compare before and after pull)
+      const afterPullCommit = this.getCurrentCommit();
+      let changedFiles = '';
+      if (beforePullCommit !== afterPullCommit) {
+        changedFiles = execSync(`git diff --name-only ${beforePullCommit} ${afterPullCommit}`, {
+          cwd: this.projectRoot,
+          encoding: 'utf-8',
+          stdio: 'pipe',
+        }).trim();
+      }
 
       const needsNpmInstall = changedFiles.includes('package.json') || changedFiles.includes('package-lock.json');
 

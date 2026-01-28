@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Download,
   RefreshCw,
@@ -29,7 +29,8 @@ interface ChangelogCommit {
   author: string;
 }
 
-const API_BASE = 'http://localhost:3001';
+// Use environment variable or derive from current location
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export function UpdateView() {
   const [status, setStatus] = useState<UpdateStatus | null>(null);
@@ -41,6 +42,18 @@ export function UpdateView() {
     success: boolean;
     message: string;
   } | null>(null);
+
+  // Ref to store countdown interval for cleanup
+  const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Cleanup countdown interval on unmount
+  useEffect(() => {
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+    };
+  }, []);
 
   const checkForUpdates = useCallback(async () => {
     setLoading(true);
@@ -96,10 +109,13 @@ export function UpdateView() {
         setUpdateResult({ success: true, message: data.message });
         // Show countdown before expected restart
         let countdown = 5;
-        const countdownInterval = setInterval(() => {
+        countdownIntervalRef.current = setInterval(() => {
           countdown--;
           if (countdown <= 0) {
-            clearInterval(countdownInterval);
+            if (countdownIntervalRef.current) {
+              clearInterval(countdownIntervalRef.current);
+              countdownIntervalRef.current = null;
+            }
             // Try to reconnect
             setTimeout(() => {
               window.location.reload();
