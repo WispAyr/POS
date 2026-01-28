@@ -5,6 +5,7 @@ import {
   Payment,
   Permit,
   Decision,
+  PermitType,
 } from '../../../src/domain/entities';
 import { SessionStatus, DecisionOutcome } from '../../../src/domain/entities';
 
@@ -89,10 +90,11 @@ export const createTestPermit = (overrides?: Partial<Permit>): Permit => ({
   id: 'permit-uuid',
   siteId: 'TEST01',
   vrm: 'AB12CDE',
-  type: 'WHITELIST',
+  type: PermitType.WHITELIST,
   startDate: new Date(Date.now() - 86400000), // Yesterday
   endDate: null, // Indefinite
   active: true,
+  mondayItemId: null,
   createdAt: new Date(),
   ...overrides,
 });

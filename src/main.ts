@@ -12,29 +12,37 @@ async function bootstrap() {
   // Global logging interceptor for request/response logging
   app.useGlobalInterceptors(new LoggingInterceptor());
 
-  // Enable CORS for frontend dev server
+  // CORS configuration - use environment variable for production origins
+  const allowedOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim())
+    : null;
+
   app.enableCors({
-    origin: true, // Allow all origins in development
+    origin:
+      process.env.NODE_ENV === 'production' ? allowedOrigins || false : true, // Allow all origins only in development
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-ID'],
   });
 
   const port = process.env.PORT ?? 3000;
 
-  // Cleanup port if in use (macOS/Linux)
-  if (process.platform !== 'win32') {
-    try {
-      const { execSync } = require('child_process');
-      const pid = execSync(`lsof -t -i:${port}`).toString().trim();
-      if (pid) {
-        console.log(`Port ${port} is in use by PID ${pid}. Killing...`);
-        execSync(`kill -9 ${pid}`);
-      }
-    } catch (e) {
-      // Ignore errors if no process found
+  try {
+    await app.listen(port);
+    console.log(`Application is running on: http://localhost:${port}`);
+  } catch (error: unknown) {
+    if (
+      error instanceof Error &&
+      'code' in error &&
+      error.code === 'EADDRINUSE'
+    ) {
+      console.error(
+        `Port ${port} is already in use. Please stop the other process or use a different port.`,
+      );
+      console.error(`You can find the process using: lsof -i:${port}`);
+      process.exit(1);
     }
+    throw error;
   }
-
-  await app.listen(port);
-  console.log(`Application is running on: http://localhost:${port}`);
 }
 bootstrap();

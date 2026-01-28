@@ -27,11 +27,13 @@ export class HealthController {
         database: 'connected',
         timestamp: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       return {
         status: 'error',
         database: 'disconnected',
-        error: error.message,
+        error: errorMessage,
         timestamp: new Date().toISOString(),
       };
     }
@@ -49,13 +51,15 @@ export class HealthController {
         },
         timestamp: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       return {
         status: 'not ready',
         checks: {
           database: 'error',
         },
-        error: error.message,
+        error: errorMessage,
         timestamp: new Date().toISOString(),
       };
     }
