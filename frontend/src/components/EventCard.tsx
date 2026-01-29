@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Clock, ArrowUpCircle, ArrowDownCircle, X } from 'lucide-react';
+import { Camera, Clock, ArrowUpCircle, ArrowDownCircle, X } from 'lucide-react';
 import { ImageWithLoader, ThumbnailWithLoader } from './ImageWithLoader';
 
 interface EventImage {

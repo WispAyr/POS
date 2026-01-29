@@ -5,7 +5,6 @@ import {
   X,
   Clock,
   MapPin,
-  Car,
   SkipForward,
   FileText,
   History,
