@@ -580,7 +580,10 @@ export function EnforcementReview() {
                 src={entryOverviewImage}
                 alt="Entry Overview"
                 className="w-full h-full object-cover cursor-pointer"
-                onClick={() => entryOverviewImage && window.open(entryOverviewImage, '_blank')}
+                onClick={() =>
+                  entryOverviewImage &&
+                  window.open(entryOverviewImage, '_blank')
+                }
                 showPlaceholderIcon={!entryOverviewImage}
               />
               <div className="absolute bottom-1 left-1 bg-green-600/90 text-white text-xs px-2 py-0.5 rounded font-semibold z-10">
@@ -592,7 +595,9 @@ export function EnforcementReview() {
                 src={entryPlateImage}
                 alt="Entry Plate"
                 className="w-full h-full object-cover cursor-pointer"
-                onClick={() => entryPlateImage && window.open(entryPlateImage, '_blank')}
+                onClick={() =>
+                  entryPlateImage && window.open(entryPlateImage, '_blank')
+                }
                 showPlaceholderIcon={!entryPlateImage}
               />
               <div className="absolute bottom-1 left-1 bg-green-600/90 text-white text-xs px-2 py-0.5 rounded font-semibold z-10">
@@ -604,7 +609,9 @@ export function EnforcementReview() {
                 src={exitOverviewImage}
                 alt="Exit Overview"
                 className="w-full h-full object-cover cursor-pointer"
-                onClick={() => exitOverviewImage && window.open(exitOverviewImage, '_blank')}
+                onClick={() =>
+                  exitOverviewImage && window.open(exitOverviewImage, '_blank')
+                }
                 showPlaceholderIcon={!exitOverviewImage}
               />
               <div className="absolute bottom-1 left-1 bg-red-600/90 text-white text-xs px-2 py-0.5 rounded font-semibold z-10">
@@ -616,7 +623,9 @@ export function EnforcementReview() {
                 src={exitPlateImage}
                 alt="Exit Plate"
                 className="w-full h-full object-cover cursor-pointer"
-                onClick={() => exitPlateImage && window.open(exitPlateImage, '_blank')}
+                onClick={() =>
+                  exitPlateImage && window.open(exitPlateImage, '_blank')
+                }
                 showPlaceholderIcon={!exitPlateImage}
               />
               <div className="absolute bottom-1 left-1 bg-red-600/90 text-white text-xs px-2 py-0.5 rounded font-semibold z-10">

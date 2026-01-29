@@ -68,7 +68,9 @@ export function EventsView() {
       .then((res) => res.json())
       .then((data) => {
         // Show all active sites
-        const activeSites = data.filter((s: Site & { active?: boolean }) => s.active !== false);
+        const activeSites = data.filter(
+          (s: Site & { active?: boolean }) => s.active !== false,
+        );
         setSites(activeSites);
       })
       .catch(console.error);
