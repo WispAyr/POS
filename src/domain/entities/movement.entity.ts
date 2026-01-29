@@ -25,7 +25,7 @@ export class Movement {
   @Column()
   cameraIds: string; // Comma separated or single ID
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   direction: string; // 'ENTRY', 'EXIT', etc. Derived from Site Config.
 
   @Column({ type: 'jsonb', nullable: true })

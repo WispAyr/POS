@@ -27,20 +27,20 @@ export class Session {
   vrm: string;
 
   // We store IDs to keep flexibility, or could use Relations
-  @Column({ nullable: true })
-  entryMovementId: string;
+  @Column({ type: 'uuid', nullable: true })
+  entryMovementId: string | null;
 
-  @Column({ nullable: true })
-  exitMovementId: string;
+  @Column({ type: 'uuid', nullable: true })
+  exitMovementId: string | null;
 
   @Column({ type: 'timestamp' })
   startTime: Date;
 
   @Column({ type: 'timestamp', nullable: true })
-  endTime: Date;
+  endTime: Date | null;
 
   @Column({ type: 'int', nullable: true })
-  durationMinutes: number;
+  durationMinutes: number | null;
 
   @Column({
     type: 'enum',

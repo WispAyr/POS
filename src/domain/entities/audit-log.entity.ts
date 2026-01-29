@@ -64,10 +64,10 @@ export class AuditLog {
   @Column({ default: 'SYSTEM' })
   actor: string; // 'SYSTEM', User ID, API Key, etc.
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   actorType: string; // 'SYSTEM', 'USER', 'API', 'SCHEDULER', 'INTEGRATION'
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   ipAddress: string; // For API requests
 
   @Column({ type: 'jsonb', nullable: true })
@@ -77,17 +77,17 @@ export class AuditLog {
   @Column({ type: 'jsonb', nullable: true })
   relatedEntities: RelatedEntity[]; // Links to related entities
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   traceId: string; // Correlation ID for request tracing
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   parentAuditId: string; // Link to parent audit log (for cascading actions)
 
   // Context
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   siteId: string; // Site context
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   vrm: string; // VRM context (for fast VRM-based queries)
 
   @Column({ type: 'jsonb', nullable: true })

@@ -267,13 +267,15 @@ export class AuditService {
         sessionId: decision.sessionId,
         evaluationTimestamp: new Date(),
       },
-      relatedEntities: [
-        {
-          entityType: 'SESSION',
-          entityId: decision.sessionId,
-          relationship: 'EVALUATES',
-        },
-      ],
+      relatedEntities: decision.sessionId
+        ? [
+            {
+              entityType: 'SESSION',
+              entityId: decision.sessionId,
+              relationship: 'EVALUATES',
+            },
+          ]
+        : [],
       siteId: session.siteId,
       vrm: session.vrm,
       parentAuditId: sessionCompletedAuditId,
@@ -304,13 +306,15 @@ export class AuditService {
         notes,
         reviewTimestamp: new Date(),
       },
-      relatedEntities: [
-        {
-          entityType: 'SESSION',
-          entityId: decision.sessionId,
-          relationship: 'REVIEWS',
-        },
-      ],
+      relatedEntities: decision.sessionId
+        ? [
+            {
+              entityType: 'SESSION',
+              entityId: decision.sessionId,
+              relationship: 'REVIEWS',
+            },
+          ]
+        : [],
       parentAuditId: decisionCreatedAuditId,
     });
   }
@@ -443,11 +447,15 @@ export class AuditService {
           entityId: triggerEntityId,
           relationship: 'TRIGGERED_BY',
         },
-        {
-          entityType: 'SESSION',
-          entityId: decision.sessionId,
-          relationship: 'AFFECTS',
-        },
+        ...(decision.sessionId
+          ? [
+              {
+                entityType: 'SESSION',
+                entityId: decision.sessionId,
+                relationship: 'AFFECTS',
+              },
+            ]
+          : []),
       ],
       parentAuditId: reconciliationTriggerAuditId,
     });
@@ -624,6 +632,10 @@ export class AuditService {
     });
     if (!decision) {
       throw new Error(`Decision ${decisionId} not found`);
+    }
+
+    if (!decision.sessionId) {
+      throw new Error(`Decision ${decisionId} has no associated session`);
     }
 
     const session = await this.sessionRepo.findOne({
