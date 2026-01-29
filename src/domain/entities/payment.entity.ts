@@ -33,7 +33,7 @@ export class Payment {
   @Column()
   source: string; // 'APP', 'KIOSK', 'TERM', 'IMPORT'
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   externalReference: string;
 
   @Column({ type: 'jsonb', nullable: true })

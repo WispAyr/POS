@@ -68,16 +68,16 @@ export class BuildAudit {
   @Column({ default: 'SYSTEM' })
   actor: string; // 'SYSTEM', User ID, CI System, etc.
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   actorType: string; // 'SYSTEM', 'USER', 'CI', 'CD', 'SCHEDULER'
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   ciWorkflow?: string; // GitHub Actions workflow name
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   ciRunId?: string; // GitHub Actions run ID
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   ciJobId?: string; // GitHub Actions job ID
 
   // Build Artifacts
@@ -119,6 +119,6 @@ export class BuildAudit {
   @Column({ type: 'jsonb', nullable: true })
   relatedBuilds?: string[]; // IDs of related builds (e.g., test build after main build)
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   parentBuildId?: string; // Parent build (e.g., test build's parent is main build)
 }

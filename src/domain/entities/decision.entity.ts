@@ -20,10 +20,10 @@ export class Decision {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   sessionId: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   movementId: string | null;
 
   @Column({
@@ -44,7 +44,7 @@ export class Decision {
   @Column({ default: false })
   isOperatorOverride: boolean;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   operatorId: string | null;
 
   @Column({ type: 'jsonb', nullable: true })
