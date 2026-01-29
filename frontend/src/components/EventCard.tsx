@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Camera, Clock, ArrowUpCircle, ArrowDownCircle, X } from 'lucide-react';
+import { Clock, ArrowUpCircle, ArrowDownCircle, X } from 'lucide-react';
+import { ImageWithLoader, ThumbnailWithLoader } from './ImageWithLoader';
 
 interface EventImage {
   url: string;
@@ -28,7 +29,7 @@ export function EventCard({
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // Resolve relative URLs to full API URLs
-  const API_BASE = 'http://localhost:3001';
+  const API_BASE = '';
   const resolveImageUrl = (url: string | undefined) => {
     if (!url) return undefined;
     if (url.startsWith('http')) return url;
@@ -61,25 +62,25 @@ export function EventCard({
         {/* Image Section */}
         <div className="relative aspect-video bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden">
           {overviewImage ? (
-            <img
+            <ImageWithLoader
               src={overviewImage}
               alt="Overview"
               className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-300"
-              loading="lazy"
               onClick={() => openImageModal(overviewImage)}
             />
           ) : plateImage ? (
-            <img
+            <ImageWithLoader
               src={plateImage}
               alt={`Plate ${vrm}`}
               className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-300"
-              loading="lazy"
               onClick={() => openImageModal(plateImage)}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-500">
-              <Camera className="w-12 h-12 opacity-30" />
-            </div>
+            <ImageWithLoader
+              src={undefined}
+              alt="No image"
+              showPlaceholderIcon={true}
+            />
           )}
 
           {/* Direction Badge */}
@@ -107,11 +108,10 @@ export function EventCard({
                 openImageModal(plateImage);
               }}
             >
-              <img
+              <ThumbnailWithLoader
                 src={plateImage}
                 alt="Plate Crop"
                 className="w-full h-full object-contain"
-                loading="lazy"
               />
             </div>
           )}

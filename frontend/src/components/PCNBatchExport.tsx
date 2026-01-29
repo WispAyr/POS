@@ -6,12 +6,12 @@ import {
   CheckSquare,
   Square,
   X,
-  Car,
   Clock,
   MapPin,
   FileText,
   Eye,
 } from 'lucide-react';
+import { ImageWithLoader } from './ImageWithLoader';
 
 interface ApprovedPCN {
   id: string;
@@ -336,126 +336,62 @@ export function PCNBatchExport() {
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">
                   Evidence Images
                 </h4>
-                <div className="grid grid-cols-2 gap-3 bg-gray-900 rounded-xl overflow-hidden">
+                <div className="grid grid-cols-2 gap-3 bg-gray-900 rounded-xl overflow-hidden p-1">
                   {/* Entry Images */}
                   <div className="relative group overflow-hidden aspect-video">
-                    {viewingPcn.metadata?.entryImages?.find(
-                      (img) => img.type === 'overview',
-                    )?.url ? (
-                      <img
-                        src={
-                          viewingPcn.metadata.entryImages.find(
-                            (img) => img.type === 'overview',
-                          )!.url
-                        }
-                        alt="Entry Overview"
-                        className="w-full h-full object-cover cursor-pointer"
-                        onClick={() =>
-                          window.open(
-                            viewingPcn.metadata!.entryImages!.find(
-                              (img) => img.type === 'overview',
-                            )!.url,
-                            '_blank',
-                          )
-                        }
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-500">
-                        No Entry Overview
-                      </div>
-                    )}
-                    <div className="absolute bottom-2 left-2 bg-green-600/80 text-white text-xs px-2 py-1 rounded font-semibold">
+                    <ImageWithLoader
+                      src={viewingPcn.metadata?.entryImages?.find((img) => img.type === 'overview')?.url}
+                      alt="Entry Overview"
+                      className="w-full h-full object-cover cursor-pointer"
+                      onClick={() => {
+                        const url = viewingPcn.metadata?.entryImages?.find((img) => img.type === 'overview')?.url;
+                        if (url) window.open(url, '_blank');
+                      }}
+                    />
+                    <div className="absolute bottom-2 left-2 bg-green-600/80 text-white text-xs px-2 py-1 rounded font-semibold z-10">
                       Entry - Overview
                     </div>
                   </div>
                   <div className="relative group overflow-hidden aspect-video">
-                    {viewingPcn.metadata?.entryImages?.find(
-                      (img) => img.type === 'plate',
-                    )?.url ? (
-                      <img
-                        src={
-                          viewingPcn.metadata.entryImages.find(
-                            (img) => img.type === 'plate',
-                          )!.url
-                        }
-                        alt="Entry Plate"
-                        className="w-full h-full object-cover cursor-pointer"
-                        onClick={() =>
-                          window.open(
-                            viewingPcn.metadata!.entryImages!.find(
-                              (img) => img.type === 'plate',
-                            )!.url,
-                            '_blank',
-                          )
-                        }
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-500 bg-gray-800">
-                        <Car className="w-12 h-12 text-gray-600" />
-                      </div>
-                    )}
-                    <div className="absolute bottom-2 left-2 bg-green-600/80 text-white text-xs px-2 py-1 rounded font-semibold">
+                    <ImageWithLoader
+                      src={viewingPcn.metadata?.entryImages?.find((img) => img.type === 'plate')?.url}
+                      alt="Entry Plate"
+                      className="w-full h-full object-cover cursor-pointer"
+                      onClick={() => {
+                        const url = viewingPcn.metadata?.entryImages?.find((img) => img.type === 'plate')?.url;
+                        if (url) window.open(url, '_blank');
+                      }}
+                    />
+                    <div className="absolute bottom-2 left-2 bg-green-600/80 text-white text-xs px-2 py-1 rounded font-semibold z-10">
                       Entry - Plate
                     </div>
                   </div>
                   {/* Exit Images */}
                   <div className="relative group overflow-hidden aspect-video">
-                    {viewingPcn.metadata?.exitImages?.find(
-                      (img) => img.type === 'overview',
-                    )?.url ? (
-                      <img
-                        src={
-                          viewingPcn.metadata.exitImages.find(
-                            (img) => img.type === 'overview',
-                          )!.url
-                        }
-                        alt="Exit Overview"
-                        className="w-full h-full object-cover cursor-pointer"
-                        onClick={() =>
-                          window.open(
-                            viewingPcn.metadata!.exitImages!.find(
-                              (img) => img.type === 'overview',
-                            )!.url,
-                            '_blank',
-                          )
-                        }
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-500">
-                        No Exit Overview
-                      </div>
-                    )}
-                    <div className="absolute bottom-2 left-2 bg-red-600/80 text-white text-xs px-2 py-1 rounded font-semibold">
+                    <ImageWithLoader
+                      src={viewingPcn.metadata?.exitImages?.find((img) => img.type === 'overview')?.url}
+                      alt="Exit Overview"
+                      className="w-full h-full object-cover cursor-pointer"
+                      onClick={() => {
+                        const url = viewingPcn.metadata?.exitImages?.find((img) => img.type === 'overview')?.url;
+                        if (url) window.open(url, '_blank');
+                      }}
+                    />
+                    <div className="absolute bottom-2 left-2 bg-red-600/80 text-white text-xs px-2 py-1 rounded font-semibold z-10">
                       Exit - Overview
                     </div>
                   </div>
                   <div className="relative group overflow-hidden aspect-video">
-                    {viewingPcn.metadata?.exitImages?.find(
-                      (img) => img.type === 'plate',
-                    )?.url ? (
-                      <img
-                        src={
-                          viewingPcn.metadata.exitImages.find(
-                            (img) => img.type === 'plate',
-                          )!.url
-                        }
-                        alt="Exit Plate"
-                        className="w-full h-full object-cover cursor-pointer"
-                        onClick={() =>
-                          window.open(
-                            viewingPcn.metadata!.exitImages!.find(
-                              (img) => img.type === 'plate',
-                            )!.url,
-                            '_blank',
-                          )
-                        }
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-500 bg-gray-800">
-                        <Car className="w-12 h-12 text-gray-600" />
-                      </div>
-                    )}
-                    <div className="absolute bottom-2 left-2 bg-red-600/80 text-white text-xs px-2 py-1 rounded font-semibold">
+                    <ImageWithLoader
+                      src={viewingPcn.metadata?.exitImages?.find((img) => img.type === 'plate')?.url}
+                      alt="Exit Plate"
+                      className="w-full h-full object-cover cursor-pointer"
+                      onClick={() => {
+                        const url = viewingPcn.metadata?.exitImages?.find((img) => img.type === 'plate')?.url;
+                        if (url) window.open(url, '_blank');
+                      }}
+                    />
+                    <div className="absolute bottom-2 left-2 bg-red-600/80 text-white text-xs px-2 py-1 rounded font-semibold z-10">
                       Exit - Plate
                     </div>
                   </div>

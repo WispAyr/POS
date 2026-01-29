@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Activity,
 } from 'lucide-react';
+import { ImageWithLoader } from './ImageWithLoader';
 
 interface ParkingEvent {
   sessionId: string;
@@ -876,11 +877,13 @@ export function ParkingEventsView() {
                           <p className="text-xs text-gray-500 dark:text-gray-400">
                             Entry {idx + 1}
                           </p>
-                          <img
-                            src={img.url}
-                            alt={`Entry ${idx + 1}`}
-                            className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-slate-800"
-                          />
+                          <div className="h-48 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-800">
+                            <ImageWithLoader
+                              src={img.url}
+                              alt={`Entry ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
                         </div>
                       ))}
                     {viewingSession.metadata.exitImages
@@ -890,11 +893,13 @@ export function ParkingEventsView() {
                           <p className="text-xs text-gray-500 dark:text-gray-400">
                             Exit {idx + 1}
                           </p>
-                          <img
-                            src={img.url}
-                            alt={`Exit ${idx + 1}`}
-                            className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-slate-800"
-                          />
+                          <div className="h-48 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-800">
+                            <ImageWithLoader
+                              src={img.url}
+                              alt={`Exit ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
                         </div>
                       ))}
                   </div>

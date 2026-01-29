@@ -16,6 +16,7 @@ import {
   Calendar,
   Building2,
 } from 'lucide-react';
+import { ImageWithLoader } from './ImageWithLoader';
 
 interface Decision {
   id: string;
@@ -576,70 +577,50 @@ export function EnforcementReview() {
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-gray-200 dark:border-slate-800 overflow-hidden mb-4">
           <div className="grid grid-cols-4 gap-1 bg-gray-900 p-1">
             <div className="relative group overflow-hidden aspect-video">
-              {entryOverviewImage ? (
-                <img
-                  src={entryOverviewImage}
-                  alt="Entry Overview"
-                  className="w-full h-full object-cover cursor-pointer"
-                  onClick={() => window.open(entryOverviewImage, '_blank')}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-500">
-                  No Image
-                </div>
-              )}
-              <div className="absolute bottom-1 left-1 bg-green-600/90 text-white text-xs px-2 py-0.5 rounded font-semibold">
+              <ImageWithLoader
+                src={entryOverviewImage}
+                alt="Entry Overview"
+                className="w-full h-full object-cover cursor-pointer"
+                onClick={() => entryOverviewImage && window.open(entryOverviewImage, '_blank')}
+                showPlaceholderIcon={!entryOverviewImage}
+              />
+              <div className="absolute bottom-1 left-1 bg-green-600/90 text-white text-xs px-2 py-0.5 rounded font-semibold z-10">
                 Entry Overview
               </div>
             </div>
             <div className="relative group overflow-hidden aspect-video">
-              {entryPlateImage ? (
-                <img
-                  src={entryPlateImage}
-                  alt="Entry Plate"
-                  className="w-full h-full object-cover cursor-pointer"
-                  onClick={() => window.open(entryPlateImage, '_blank')}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-500 bg-gray-800">
-                  <Car className="w-8 h-8 text-gray-600" />
-                </div>
-              )}
-              <div className="absolute bottom-1 left-1 bg-green-600/90 text-white text-xs px-2 py-0.5 rounded font-semibold">
+              <ImageWithLoader
+                src={entryPlateImage}
+                alt="Entry Plate"
+                className="w-full h-full object-cover cursor-pointer"
+                onClick={() => entryPlateImage && window.open(entryPlateImage, '_blank')}
+                showPlaceholderIcon={!entryPlateImage}
+              />
+              <div className="absolute bottom-1 left-1 bg-green-600/90 text-white text-xs px-2 py-0.5 rounded font-semibold z-10">
                 Entry Plate
               </div>
             </div>
             <div className="relative group overflow-hidden aspect-video">
-              {exitOverviewImage ? (
-                <img
-                  src={exitOverviewImage}
-                  alt="Exit Overview"
-                  className="w-full h-full object-cover cursor-pointer"
-                  onClick={() => window.open(exitOverviewImage, '_blank')}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-500">
-                  No Image
-                </div>
-              )}
-              <div className="absolute bottom-1 left-1 bg-red-600/90 text-white text-xs px-2 py-0.5 rounded font-semibold">
+              <ImageWithLoader
+                src={exitOverviewImage}
+                alt="Exit Overview"
+                className="w-full h-full object-cover cursor-pointer"
+                onClick={() => exitOverviewImage && window.open(exitOverviewImage, '_blank')}
+                showPlaceholderIcon={!exitOverviewImage}
+              />
+              <div className="absolute bottom-1 left-1 bg-red-600/90 text-white text-xs px-2 py-0.5 rounded font-semibold z-10">
                 Exit Overview
               </div>
             </div>
             <div className="relative group overflow-hidden aspect-video">
-              {exitPlateImage ? (
-                <img
-                  src={exitPlateImage}
-                  alt="Exit Plate"
-                  className="w-full h-full object-cover cursor-pointer"
-                  onClick={() => window.open(exitPlateImage, '_blank')}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-500 bg-gray-800">
-                  <Car className="w-8 h-8 text-gray-600" />
-                </div>
-              )}
-              <div className="absolute bottom-1 left-1 bg-red-600/90 text-white text-xs px-2 py-0.5 rounded font-semibold">
+              <ImageWithLoader
+                src={exitPlateImage}
+                alt="Exit Plate"
+                className="w-full h-full object-cover cursor-pointer"
+                onClick={() => exitPlateImage && window.open(exitPlateImage, '_blank')}
+                showPlaceholderIcon={!exitPlateImage}
+              />
+              <div className="absolute bottom-1 left-1 bg-red-600/90 text-white text-xs px-2 py-0.5 rounded font-semibold z-10">
                 Exit Plate
               </div>
             </div>

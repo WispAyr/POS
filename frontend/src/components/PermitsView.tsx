@@ -112,7 +112,7 @@ const PermitRow = ({
     </td>
   </tr>
 );
-const API_BASE = 'http://localhost:3001';
+const API_BASE = '';
 
 export function PermitsView() {
   const [permits, setPermits] = useState<Permit[]>([]);

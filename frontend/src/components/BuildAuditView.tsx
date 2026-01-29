@@ -11,7 +11,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:3001';
+const API_BASE = '';
 
 interface VersionInfo {
   backend?: string;

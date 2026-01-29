@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Search, Clock, User, FileText, Download, Eye } from 'lucide-react';
 
-const API_BASE = 'http://localhost:3001';
+const API_BASE = '';
 
 interface AuditLog {
   id: string;
