@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CreditCard, CheckCircle, XCircle, Clock, TrendingUp, DollarSign, Search, RefreshCw, AlertCircle, Filter } from 'lucide-react';
+import { CreditCard, CheckCircle, XCircle, DollarSign, Search, RefreshCw, AlertCircle, Filter } from 'lucide-react';
 
 const API_BASE = 'http://localhost:3000';
 

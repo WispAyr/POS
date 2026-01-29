@@ -39,6 +39,9 @@ lerna-debug.log*
 .env.local
 .env.*.local
 
+# Local operations notes
+.operations-notes
+
 # Uploads
 /uploads
 !/uploads/.gitkeep
