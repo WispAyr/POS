@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import axios from 'axios';
 import {
   Check,
@@ -91,6 +91,10 @@ export function EnforcementReview() {
   // const [newMarkerType, setNewMarkerType] = useState('');
   // const [newMarkerDesc, setNewMarkerDesc] = useState('');
 
+  // AbortController refs for request cancellation
+  const queueAbortRef = useRef<AbortController | null>(null);
+  const vehicleAbortRef = useRef<AbortController | null>(null);
+
   // Fetch sites
   const fetchSites = async () => {
     try {
@@ -101,8 +105,14 @@ export function EnforcementReview() {
     }
   };
 
-  // Fetch queue
-  const fetchQueue = async () => {
+  // Fetch queue with AbortController
+  const fetchQueue = useCallback(async () => {
+    // Cancel any pending request
+    if (queueAbortRef.current) {
+      queueAbortRef.current.abort();
+    }
+    queueAbortRef.current = new AbortController();
+
     try {
       const params = new URLSearchParams({ status: 'NEW' });
 
@@ -121,46 +131,75 @@ export function EnforcementReview() {
 
       const { data } = await axios.get(
         `/enforcement/queue?${params.toString()}`,
+        { signal: queueAbortRef.current.signal },
       );
-      setQueue(data);
-      if (data.length > 0 && !currentDecision) {
-        setCurrentDecision(data[0]);
-      } else if (data.length === 0) {
+      // Handle paginated response
+      const items = data.items || data;
+      setQueue(items);
+      if (items.length > 0 && !currentDecision) {
+        setCurrentDecision(items[0]);
+      } else if (items.length === 0) {
         setCurrentDecision(null);
       }
     } catch (error) {
-      console.error('Failed to fetch review queue', error);
+      if (!axios.isCancel(error)) {
+        console.error('Failed to fetch review queue', error);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedSites, dateFrom, dateTo, currentDecision]);
 
-  // Fetch vehicle data
-  const fetchVehicleData = async (vrm: string) => {
-    try {
-      const [historyRes, notesRes, markersRes] = await Promise.all([
-        axios
-          .get(`/enforcement/vehicle/${vrm}/history`)
-          .catch(() => ({ data: null })),
-        axios
-          .get(`/enforcement/vehicle/${vrm}/notes`)
-          .catch(() => ({ data: [] })),
-        axios
-          .get(`/enforcement/vehicle/${vrm}/markers`)
-          .catch(() => ({ data: [] })),
-      ]);
-      setVehicleHistory(historyRes.data);
-      setVehicleNotes(notesRes.data);
-      setVehicleMarkers(markersRes.data);
-    } catch (error) {
-      console.error('Failed to fetch vehicle data', error);
+  // Fetch vehicle data using combined endpoint with AbortController
+  const fetchVehicleData = useCallback(async (vrm: string) => {
+    // Cancel any pending request
+    if (vehicleAbortRef.current) {
+      vehicleAbortRef.current.abort();
     }
-  };
+    vehicleAbortRef.current = new AbortController();
+
+    try {
+      // Use combined endpoint for single API call instead of 3 parallel calls
+      const { data } = await axios.get(`/enforcement/vehicle/${vrm}/details`, {
+        signal: vehicleAbortRef.current.signal,
+      });
+      setVehicleHistory(data.history);
+      setVehicleNotes(data.notes || []);
+      setVehicleMarkers(data.markers || []);
+    } catch (error) {
+      if (!axios.isCancel(error)) {
+        console.error('Failed to fetch vehicle data', error);
+        // Fallback to individual calls if combined endpoint fails
+        try {
+          const [historyRes, notesRes, markersRes] = await Promise.all([
+            axios.get(`/enforcement/vehicle/${vrm}/history`).catch(() => ({ data: null })),
+            axios.get(`/enforcement/vehicle/${vrm}/notes`).catch(() => ({ data: [] })),
+            axios.get(`/enforcement/vehicle/${vrm}/markers`).catch(() => ({ data: [] })),
+          ]);
+          setVehicleHistory(historyRes.data);
+          setVehicleNotes(notesRes.data);
+          setVehicleMarkers(markersRes.data);
+        } catch (fallbackError) {
+          console.error('Fallback vehicle data fetch failed', fallbackError);
+        }
+      }
+    }
+  }, []);
 
   useEffect(() => {
     fetchSites();
     fetchQueue();
-  }, []);
+
+    // Cleanup abort controllers on unmount
+    return () => {
+      if (queueAbortRef.current) {
+        queueAbortRef.current.abort();
+      }
+      if (vehicleAbortRef.current) {
+        vehicleAbortRef.current.abort();
+      }
+    };
+  }, [fetchQueue]);
 
   useEffect(() => {
     const active = selectedSites.size > 0 || dateFrom !== '' || dateTo !== '';

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import {
   Calendar,
@@ -73,9 +73,19 @@ export function ParkingEventsView() {
   const [showSiteBreakdown, setShowSiteBreakdown] = useState(false);
   const itemsPerPage = 50;
 
+  // AbortController ref for request cancellation
+  const eventsAbortRef = useRef<AbortController | null>(null);
+
   useEffect(() => {
     fetchSites();
     fetchEvents();
+
+    // Cleanup on unmount
+    return () => {
+      if (eventsAbortRef.current) {
+        eventsAbortRef.current.abort();
+      }
+    };
   }, []);
 
   const fetchSites = async () => {
@@ -87,7 +97,13 @@ export function ParkingEventsView() {
     }
   };
 
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
+    // Cancel any pending request
+    if (eventsAbortRef.current) {
+      eventsAbortRef.current.abort();
+    }
+    eventsAbortRef.current = new AbortController();
+
     setLoading(true);
     try {
       const params: any = {};
@@ -99,14 +115,19 @@ export function ParkingEventsView() {
 
       const { data } = await axios.get('/enforcement/parking-events', {
         params,
+        signal: eventsAbortRef.current.signal,
       });
-      setEvents(data);
+      // Handle paginated response
+      const items = data.items || data;
+      setEvents(items);
     } catch (error) {
-      console.error('Failed to fetch parking events:', error);
+      if (!axios.isCancel(error)) {
+        console.error('Failed to fetch parking events:', error);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedSites, dateFrom, dateTo]);
 
   const fetchAuditLog = async (sessionId: string, decisionId?: string) => {
     try {
