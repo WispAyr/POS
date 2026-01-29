@@ -1,6 +1,10 @@
 import { DataSource } from 'typeorm';
 import { TestDataGenerator } from './test-data-generator';
-import { Site, DecisionOutcome } from '../../../src/domain/entities';
+import {
+  Site,
+  DecisionOutcome,
+  PermitType,
+} from '../../../src/domain/entities';
 
 /**
  * Pre-defined test scenarios for common parking situations
@@ -76,7 +80,7 @@ export class TestScenarios {
 
     // Create permit
     const permit = await this.generator.createPermit(siteId, vrm, {
-      type: 'WHITELIST',
+      type: PermitType.WHITELIST,
       active: true,
     });
 
@@ -248,7 +252,7 @@ export class TestScenarios {
 
     // Create global permit (siteId = null)
     const permit = await this.generator.createPermit(null, vrm, {
-      type: 'STAFF',
+      type: PermitType.STAFF,
       active: true,
     });
 

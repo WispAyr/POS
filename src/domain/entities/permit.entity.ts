@@ -38,7 +38,7 @@ export class Permit {
   active: boolean;
 
   @Column({ type: 'text', nullable: true })
-  mondayItemId: string;
+  mondayItemId: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

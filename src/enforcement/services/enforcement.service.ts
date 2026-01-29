@@ -18,7 +18,7 @@ export interface EnrichedDecision {
   reason: string;
   confidenceScore: number;
   timestamp: string;
-  durationMinutes?: number;
+  durationMinutes?: number | null;
   entryTime?: string;
   exitTime?: string;
   metadata?: {
@@ -33,8 +33,14 @@ export interface ParkingEvent {
   siteId: string;
   entryTime: string;
   exitTime?: string;
-  durationMinutes?: number;
-  status: 'PASSTHROUGH' | 'POTENTIAL_PCN' | 'APPROVED_PCN' | 'DECLINED_PCN' | 'EXPORTED_PCN' | 'ACTIVE';
+  durationMinutes?: number | null;
+  status:
+    | 'PASSTHROUGH'
+    | 'POTENTIAL_PCN'
+    | 'APPROVED_PCN'
+    | 'DECLINED_PCN'
+    | 'EXPORTED_PCN'
+    | 'ACTIVE';
   decisionId?: string;
   reason?: string;
   metadata?: {
@@ -406,7 +412,9 @@ export class EnforcementService {
     // Create a map for quick decision lookup
     const decisionMap = new Map<string, Decision>();
     decisions.forEach((d) => {
-      decisionMap.set(d.sessionId, d);
+      if (d.sessionId) {
+        decisionMap.set(d.sessionId, d);
+      }
     });
 
     // Get movements for images

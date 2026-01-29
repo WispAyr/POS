@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Calendar, Filter, X, FileSearch, ChevronLeft, ChevronRight, TrendingUp, Activity } from 'lucide-react';
+import {
+  Calendar,
+  Filter,
+  X,
+  FileSearch,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  Activity,
+} from 'lucide-react';
 
 interface ParkingEvent {
   sessionId: string;
@@ -9,7 +18,13 @@ interface ParkingEvent {
   entryTime: string;
   exitTime?: string;
   durationMinutes?: number;
-  status: 'PASSTHROUGH' | 'POTENTIAL_PCN' | 'APPROVED_PCN' | 'DECLINED_PCN' | 'EXPORTED_PCN' | 'ACTIVE';
+  status:
+    | 'PASSTHROUGH'
+    | 'POTENTIAL_PCN'
+    | 'APPROVED_PCN'
+    | 'DECLINED_PCN'
+    | 'EXPORTED_PCN'
+    | 'ACTIVE';
   decisionId?: string;
   reason?: string;
   metadata?: {
@@ -48,7 +63,9 @@ export function ParkingEventsView() {
     return new Date().toISOString().split('T')[0];
   });
   const [showFilters, setShowFilters] = useState(false);
-  const [viewingSession, setViewingSession] = useState<ParkingEvent | null>(null);
+  const [viewingSession, setViewingSession] = useState<ParkingEvent | null>(
+    null,
+  );
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
@@ -79,7 +96,9 @@ export function ParkingEventsView() {
       if (dateFrom) params.dateFrom = dateFrom;
       if (dateTo) params.dateTo = dateTo;
 
-      const { data } = await axios.get('/enforcement/parking-events', { params });
+      const { data } = await axios.get('/enforcement/parking-events', {
+        params,
+      });
       setEvents(data);
     } catch (error) {
       console.error('Failed to fetch parking events:', error);
@@ -93,19 +112,30 @@ export function ParkingEventsView() {
       const logs: AuditLog[] = [];
 
       // Fetch session audit
-      const sessionResponse = await axios.get(`/api/audit/session/${sessionId}`);
-      const sessionLogs = sessionResponse.data.auditLogs || (Array.isArray(sessionResponse.data) ? sessionResponse.data : []);
+      const sessionResponse = await axios.get(
+        `/api/audit/session/${sessionId}`,
+      );
+      const sessionLogs =
+        sessionResponse.data.auditLogs ||
+        (Array.isArray(sessionResponse.data) ? sessionResponse.data : []);
       logs.push(...sessionLogs);
 
       // Fetch decision audit if exists
       if (decisionId) {
-        const decisionResponse = await axios.get(`/api/audit/decision/${decisionId}`);
-        const decisionLogs = decisionResponse.data.auditLogs || (Array.isArray(decisionResponse.data) ? decisionResponse.data : []);
+        const decisionResponse = await axios.get(
+          `/api/audit/decision/${decisionId}`,
+        );
+        const decisionLogs =
+          decisionResponse.data.auditLogs ||
+          (Array.isArray(decisionResponse.data) ? decisionResponse.data : []);
         logs.push(...decisionLogs);
       }
 
       // Sort by timestamp
-      logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      logs.sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      );
       setAuditLogs(logs);
     } catch (error) {
       console.error('Failed to fetch audit log:', error);
@@ -136,16 +166,40 @@ export function ParkingEventsView() {
 
   const getStatusBadge = (status: ParkingEvent['status']) => {
     const badges = {
-      PASSTHROUGH: { label: 'Passthrough', class: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
-      ACTIVE: { label: 'Active', class: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-      POTENTIAL_PCN: { label: 'Potential PCN', class: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
-      APPROVED_PCN: { label: 'Approved PCN', class: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-      DECLINED_PCN: { label: 'Declined', class: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-      EXPORTED_PCN: { label: 'Exported', class: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
+      PASSTHROUGH: {
+        label: 'Passthrough',
+        class: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+      },
+      ACTIVE: {
+        label: 'Active',
+        class:
+          'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+      },
+      POTENTIAL_PCN: {
+        label: 'Potential PCN',
+        class:
+          'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+      },
+      APPROVED_PCN: {
+        label: 'Approved PCN',
+        class: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+      },
+      DECLINED_PCN: {
+        label: 'Declined',
+        class:
+          'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+      },
+      EXPORTED_PCN: {
+        label: 'Exported',
+        class:
+          'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+      },
     };
     const badge = badges[status];
     return (
-      <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${badge.class}`}>
+      <span
+        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${badge.class}`}
+      >
         {badge.label}
       </span>
     );
@@ -153,7 +207,13 @@ export function ParkingEventsView() {
 
   const formatDateTime = (dateString?: string, isActive?: boolean) => {
     if (!dateString) {
-      return isActive ? <span className="text-blue-600 dark:text-blue-400 font-medium">In progress</span> : 'N/A';
+      return isActive ? (
+        <span className="text-blue-600 dark:text-blue-400 font-medium">
+          In progress
+        </span>
+      ) : (
+        'N/A'
+      );
     }
     const date = new Date(dateString);
     return date.toLocaleString('en-GB', {
@@ -165,16 +225,31 @@ export function ParkingEventsView() {
     });
   };
 
-  const formatDuration = (minutes?: number, entryTime?: string, isActive?: boolean) => {
+  const formatDuration = (
+    minutes?: number,
+    entryTime?: string,
+    isActive?: boolean,
+  ) => {
     if (isActive && entryTime) {
       // Calculate live duration for active sessions
       const now = new Date();
       const entry = new Date(entryTime);
-      const liveDuration = Math.floor((now.getTime() - entry.getTime()) / 60000);
-      if (liveDuration < 60) return <span className="text-blue-600 dark:text-blue-400">{liveDuration}m</span>;
+      const liveDuration = Math.floor(
+        (now.getTime() - entry.getTime()) / 60000,
+      );
+      if (liveDuration < 60)
+        return (
+          <span className="text-blue-600 dark:text-blue-400">
+            {liveDuration}m
+          </span>
+        );
       const hours = Math.floor(liveDuration / 60);
       const mins = liveDuration % 60;
-      return <span className="text-blue-600 dark:text-blue-400">{hours}h {mins}m</span>;
+      return (
+        <span className="text-blue-600 dark:text-blue-400">
+          {hours}h {mins}m
+        </span>
+      );
     }
     if (!minutes) return 'N/A';
     if (minutes < 60) return `${minutes}m`;
@@ -194,51 +269,56 @@ export function ParkingEventsView() {
   };
 
   // Group events by site
-  const eventsBySite = events.reduce((acc, event) => {
-    if (!acc[event.siteId]) acc[event.siteId] = [];
-    acc[event.siteId].push(event);
-    return acc;
-  }, {} as Record<string, ParkingEvent[]>);
+  const eventsBySite = events.reduce(
+    (acc, event) => {
+      if (!acc[event.siteId]) acc[event.siteId] = [];
+      acc[event.siteId].push(event);
+      return acc;
+    },
+    {} as Record<string, ParkingEvent[]>,
+  );
 
   // Calculate stats per site
   const siteStats = Object.entries(eventsBySite).map(([siteId, siteEvents]) => {
     const stats = {
       siteId,
-      siteName: sites.find(s => s.id === siteId)?.name || siteId,
+      siteName: sites.find((s) => s.id === siteId)?.name || siteId,
       total: siteEvents.length,
-      passthrough: siteEvents.filter(e => e.status === 'PASSTHROUGH').length,
-      active: siteEvents.filter(e => e.status === 'ACTIVE').length,
-      potential: siteEvents.filter(e => e.status === 'POTENTIAL_PCN').length,
-      approved: siteEvents.filter(e => e.status === 'APPROVED_PCN').length,
-      declined: siteEvents.filter(e => e.status === 'DECLINED_PCN').length,
-      exported: siteEvents.filter(e => e.status === 'EXPORTED_PCN').length,
+      passthrough: siteEvents.filter((e) => e.status === 'PASSTHROUGH').length,
+      active: siteEvents.filter((e) => e.status === 'ACTIVE').length,
+      potential: siteEvents.filter((e) => e.status === 'POTENTIAL_PCN').length,
+      approved: siteEvents.filter((e) => e.status === 'APPROVED_PCN').length,
+      declined: siteEvents.filter((e) => e.status === 'DECLINED_PCN').length,
+      exported: siteEvents.filter((e) => e.status === 'EXPORTED_PCN').length,
     };
     return stats;
   });
 
-  const activeFilterCount = selectedSites.size + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
+  const activeFilterCount =
+    selectedSites.size + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
 
   // Filter events by status
-  const filteredEvents = statusFilter === 'ALL'
-    ? events
-    : events.filter(e => e.status === statusFilter);
+  const filteredEvents =
+    statusFilter === 'ALL'
+      ? events
+      : events.filter((e) => e.status === statusFilter);
 
   // Pagination
   const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
   const paginatedEvents = filteredEvents.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   // Calculate overall stats
   const stats = {
     total: events.length,
-    passthrough: events.filter(e => e.status === 'PASSTHROUGH').length,
-    active: events.filter(e => e.status === 'ACTIVE').length,
-    potential: events.filter(e => e.status === 'POTENTIAL_PCN').length,
-    approved: events.filter(e => e.status === 'APPROVED_PCN').length,
-    declined: events.filter(e => e.status === 'DECLINED_PCN').length,
-    exported: events.filter(e => e.status === 'EXPORTED_PCN').length,
+    passthrough: events.filter((e) => e.status === 'PASSTHROUGH').length,
+    active: events.filter((e) => e.status === 'ACTIVE').length,
+    potential: events.filter((e) => e.status === 'POTENTIAL_PCN').length,
+    approved: events.filter((e) => e.status === 'APPROVED_PCN').length,
+    declined: events.filter((e) => e.status === 'DECLINED_PCN').length,
+    exported: events.filter((e) => e.status === 'EXPORTED_PCN').length,
   };
 
   return (
@@ -279,8 +359,12 @@ export function ParkingEventsView() {
                 : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700'
             }`}
           >
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</div>
-            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">All Events</div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              {stats.total}
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              All Events
+            </div>
           </button>
           <button
             onClick={() => setStatusFilter('PASSTHROUGH')}
@@ -290,8 +374,12 @@ export function ParkingEventsView() {
                 : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700'
             }`}
           >
-            <div className="text-2xl font-bold text-gray-700 dark:text-gray-300">{stats.passthrough}</div>
-            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">Passthrough</div>
+            <div className="text-2xl font-bold text-gray-700 dark:text-gray-300">
+              {stats.passthrough}
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              Passthrough
+            </div>
           </button>
           <button
             onClick={() => setStatusFilter('ACTIVE')}
@@ -301,8 +389,12 @@ export function ParkingEventsView() {
                 : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700'
             }`}
           >
-            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.active}</div>
-            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">Active</div>
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {stats.active}
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              Active
+            </div>
           </button>
           <button
             onClick={() => setStatusFilter('POTENTIAL_PCN')}
@@ -312,8 +404,12 @@ export function ParkingEventsView() {
                 : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700'
             }`}
           >
-            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{stats.potential}</div>
-            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">Potential</div>
+            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+              {stats.potential}
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              Potential
+            </div>
           </button>
           <button
             onClick={() => setStatusFilter('APPROVED_PCN')}
@@ -323,8 +419,12 @@ export function ParkingEventsView() {
                 : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700'
             }`}
           >
-            <div className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.approved}</div>
-            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">Approved</div>
+            <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+              {stats.approved}
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              Approved
+            </div>
           </button>
           <button
             onClick={() => setStatusFilter('DECLINED_PCN')}
@@ -334,8 +434,12 @@ export function ParkingEventsView() {
                 : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700'
             }`}
           >
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.declined}</div>
-            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">Declined</div>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              {stats.declined}
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              Declined
+            </div>
           </button>
           <button
             onClick={() => setStatusFilter('EXPORTED_PCN')}
@@ -345,8 +449,12 @@ export function ParkingEventsView() {
                 : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700'
             }`}
           >
-            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.exported}</div>
-            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">Exported</div>
+            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+              {stats.exported}
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              Exported
+            </div>
           </button>
         </div>
 
@@ -357,7 +465,8 @@ export function ParkingEventsView() {
             className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
           >
             <TrendingUp className="w-4 h-4" />
-            {showSiteBreakdown ? 'Hide' : 'Show'} Site Breakdown ({siteStats.length} sites)
+            {showSiteBreakdown ? 'Hide' : 'Show'} Site Breakdown (
+            {siteStats.length} sites)
           </button>
         </div>
 
@@ -365,49 +474,83 @@ export function ParkingEventsView() {
         {showSiteBreakdown && (
           <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {siteStats.map((site) => (
-              <div key={site.siteId} className="bg-gray-50 dark:bg-slate-800 rounded-lg p-3 border border-gray-200 dark:border-slate-700">
-                <h5 className="font-semibold text-sm text-gray-900 dark:text-white mb-2 truncate" title={site.siteName}>
+              <div
+                key={site.siteId}
+                className="bg-gray-50 dark:bg-slate-800 rounded-lg p-3 border border-gray-200 dark:border-slate-700"
+              >
+                <h5
+                  className="font-semibold text-sm text-gray-900 dark:text-white mb-2 truncate"
+                  title={site.siteName}
+                >
                   {site.siteName}
                 </h5>
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Total:</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">{site.total}</span>
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Total:
+                    </span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {site.total}
+                    </span>
                   </div>
                   {site.active > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Active:</span>
-                      <span className="text-blue-600 dark:text-blue-400">{site.active}</span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Active:
+                      </span>
+                      <span className="text-blue-600 dark:text-blue-400">
+                        {site.active}
+                      </span>
                     </div>
                   )}
                   {site.potential > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Potential:</span>
-                      <span className="text-yellow-600 dark:text-yellow-400">{site.potential}</span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Potential:
+                      </span>
+                      <span className="text-yellow-600 dark:text-yellow-400">
+                        {site.potential}
+                      </span>
                     </div>
                   )}
                   {site.approved > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Approved:</span>
-                      <span className="text-red-600 dark:text-red-400">{site.approved}</span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Approved:
+                      </span>
+                      <span className="text-red-600 dark:text-red-400">
+                        {site.approved}
+                      </span>
                     </div>
                   )}
                   {site.declined > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Declined:</span>
-                      <span className="text-green-600 dark:text-green-400">{site.declined}</span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Declined:
+                      </span>
+                      <span className="text-green-600 dark:text-green-400">
+                        {site.declined}
+                      </span>
                     </div>
                   )}
                   {site.exported > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Exported:</span>
-                      <span className="text-purple-600 dark:text-purple-400">{site.exported}</span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Exported:
+                      </span>
+                      <span className="text-purple-600 dark:text-purple-400">
+                        {site.exported}
+                      </span>
                     </div>
                   )}
                   {site.passthrough > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Passthrough:</span>
-                      <span className="text-gray-500 dark:text-gray-500">{site.passthrough}</span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Passthrough:
+                      </span>
+                      <span className="text-gray-500 dark:text-gray-500">
+                        {site.passthrough}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -421,7 +564,9 @@ export function ParkingEventsView() {
       {showFilters && (
         <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl p-6 space-y-4">
           <div className="flex justify-between items-center mb-4">
-            <h4 className="font-semibold text-gray-900 dark:text-white">Filter Options</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">
+              Filter Options
+            </h4>
             <button
               onClick={() => setShowFilters(false)}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -437,14 +582,19 @@ export function ParkingEventsView() {
             </label>
             <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
               {sites.map((site) => (
-                <label key={site.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-slate-800 rounded cursor-pointer">
+                <label
+                  key={site.id}
+                  className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-slate-800 rounded cursor-pointer"
+                >
                   <input
                     type="checkbox"
                     checked={selectedSites.has(site.id)}
                     onChange={() => handleSiteToggle(site.id)}
                     className="w-4 h-4 text-blue-600 rounded"
                   />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">{site.name}</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    {site.name}
+                  </span>
                 </label>
               ))}
             </div>
@@ -527,21 +677,25 @@ export function ParkingEventsView() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   Reason
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-
-                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td
+                    colSpan={8}
+                    className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
+                  >
                     Loading events...
                   </td>
                 </tr>
               ) : paginatedEvents.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td
+                    colSpan={8}
+                    className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
+                  >
                     No events found
                   </td>
                 </tr>
@@ -549,38 +703,46 @@ export function ParkingEventsView() {
                 paginatedEvents.map((event) => {
                   const isActive = event.status === 'ACTIVE';
                   return (
-                  <tr key={event.sessionId} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
-                      {event.vrm}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                      {sites.find(s => s.id === event.siteId)?.name || event.siteId}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
-                      {formatDateTime(event.entryTime, false)}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
-                      {formatDateTime(event.exitTime, isActive)}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                      {formatDuration(event.durationMinutes, event.entryTime, isActive)}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {getStatusBadge(event.status)}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 max-w-xs truncate">
-                      {event.reason || '-'}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">
-                      <button
-                        onClick={() => openAuditModal(event)}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                        title="View details"
-                      >
-                        <FileSearch className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
+                    <tr
+                      key={event.sessionId}
+                      className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors"
+                    >
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
+                        {event.vrm}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        {sites.find((s) => s.id === event.siteId)?.name ||
+                          event.siteId}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
+                        {formatDateTime(event.entryTime, false)}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
+                        {formatDateTime(event.exitTime, isActive)}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        {formatDuration(
+                          event.durationMinutes,
+                          event.entryTime,
+                          isActive,
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {getStatusBadge(event.status)}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 max-w-xs truncate">
+                        {event.reason || '-'}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm">
+                        <button
+                          onClick={() => openAuditModal(event)}
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                          title="View details"
+                        >
+                          <FileSearch className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
                   );
                 })
               )}
@@ -592,11 +754,13 @@ export function ParkingEventsView() {
         {!loading && filteredEvents.length > 0 && (
           <div className="border-t border-gray-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredEvents.length)} of {filteredEvents.length} events
+              Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
+              {Math.min(currentPage * itemsPerPage, filteredEvents.length)} of{' '}
+              {filteredEvents.length} events
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
                 className="p-1.5 rounded border border-gray-200 dark:border-slate-800 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
@@ -606,7 +770,9 @@ export function ParkingEventsView() {
                 Page {currentPage} of {totalPages}
               </span>
               <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
                 disabled={currentPage === totalPages}
                 className="p-1.5 rounded border border-gray-200 dark:border-slate-800 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
@@ -629,7 +795,9 @@ export function ParkingEventsView() {
                     Parking Event Details
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    {viewingSession.vrm} at {sites.find(s => s.id === viewingSession.siteId)?.name || viewingSession.siteId}
+                    {viewingSession.vrm} at{' '}
+                    {sites.find((s) => s.id === viewingSession.siteId)?.name ||
+                      viewingSession.siteId}
                   </p>
                 </div>
                 <button
@@ -647,72 +815,112 @@ export function ParkingEventsView() {
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Entry Time:</span>
-                    <p className="text-gray-900 dark:text-white font-medium">{formatDateTime(viewingSession.entryTime)}</p>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      Entry Time:
+                    </span>
+                    <p className="text-gray-900 dark:text-white font-medium">
+                      {formatDateTime(viewingSession.entryTime)}
+                    </p>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Exit Time:</span>
-                    <p className="text-gray-900 dark:text-white font-medium">{formatDateTime(viewingSession.exitTime)}</p>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      Exit Time:
+                    </span>
+                    <p className="text-gray-900 dark:text-white font-medium">
+                      {formatDateTime(viewingSession.exitTime)}
+                    </p>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Duration:</span>
-                    <p className="text-gray-900 dark:text-white font-medium">{formatDuration(viewingSession.durationMinutes)}</p>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      Duration:
+                    </span>
+                    <p className="text-gray-900 dark:text-white font-medium">
+                      {formatDuration(viewingSession.durationMinutes)}
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Status:</span>
-                    <div className="mt-1">{getStatusBadge(viewingSession.status)}</div>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      Status:
+                    </span>
+                    <div className="mt-1">
+                      {getStatusBadge(viewingSession.status)}
+                    </div>
                   </div>
                   {viewingSession.reason && (
                     <div>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Reason:</span>
-                      <p className="text-gray-900 dark:text-white">{viewingSession.reason}</p>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        Reason:
+                      </span>
+                      <p className="text-gray-900 dark:text-white">
+                        {viewingSession.reason}
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Images */}
-              {(viewingSession.metadata?.entryImages?.length || viewingSession.metadata?.exitImages?.length) && (
+              {(viewingSession.metadata?.entryImages?.length ||
+                viewingSession.metadata?.exitImages?.length) && (
                 <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Images</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
+                    Images
+                  </h4>
                   <div className="grid grid-cols-2 gap-4">
-                    {viewingSession.metadata.entryImages?.slice(0, 2).map((img, idx) => (
-                      <div key={`entry-${idx}`} className="space-y-1">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Entry {idx + 1}</p>
-                        <img
-                          src={img.url}
-                          alt={`Entry ${idx + 1}`}
-                          className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-slate-800"
-                        />
-                      </div>
-                    ))}
-                    {viewingSession.metadata.exitImages?.slice(0, 2).map((img, idx) => (
-                      <div key={`exit-${idx}`} className="space-y-1">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Exit {idx + 1}</p>
-                        <img
-                          src={img.url}
-                          alt={`Exit ${idx + 1}`}
-                          className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-slate-800"
-                        />
-                      </div>
-                    ))}
+                    {viewingSession.metadata.entryImages
+                      ?.slice(0, 2)
+                      .map((img, idx) => (
+                        <div key={`entry-${idx}`} className="space-y-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Entry {idx + 1}
+                          </p>
+                          <img
+                            src={img.url}
+                            alt={`Entry ${idx + 1}`}
+                            className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-slate-800"
+                          />
+                        </div>
+                      ))}
+                    {viewingSession.metadata.exitImages
+                      ?.slice(0, 2)
+                      .map((img, idx) => (
+                        <div key={`exit-${idx}`} className="space-y-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Exit {idx + 1}
+                          </p>
+                          <img
+                            src={img.url}
+                            alt={`Exit ${idx + 1}`}
+                            className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-slate-800"
+                          />
+                        </div>
+                      ))}
                   </div>
                 </div>
               )}
 
               {/* Audit Trail */}
               <div>
-                <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Audit Trail</h4>
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
+                  Audit Trail
+                </h4>
                 {auditLogs.length === 0 ? (
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">No audit logs found</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">
+                    No audit logs found
+                  </p>
                 ) : (
                   <div className="space-y-3">
                     {auditLogs.map((log) => (
-                      <div key={log.id} className="border border-gray-200 dark:border-slate-800 rounded-lg p-4">
+                      <div
+                        key={log.id}
+                        className="border border-gray-200 dark:border-slate-800 rounded-lg p-4"
+                      >
                         <div className="flex justify-between items-start mb-2">
-                          <span className="font-medium text-gray-900 dark:text-white">{log.action}</span>
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {log.action}
+                          </span>
                           <span className="text-xs text-gray-500 dark:text-gray-400">
                             {formatDateTime(log.timestamp)}
                           </span>

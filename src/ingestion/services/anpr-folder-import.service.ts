@@ -154,8 +154,7 @@ export class AnprFolderImportService {
           }
         } catch (err) {
           errors++;
-          const errorMessage =
-            err instanceof Error ? err.message : String(err);
+          const errorMessage = err instanceof Error ? err.message : String(err);
           errorDetails.push({ file, error: errorMessage });
           this.logger.error(`Error processing ${file}: ${errorMessage}`);
         }
@@ -242,7 +241,11 @@ export class AnprFolderImportService {
 
     // Hikvision cameras: images in rawData.decodes[0]
     if (data.rawData?.decodes?.[0]) {
-      await this.extractHikvisionImages(data.rawData.decodes[0], eventId, images);
+      await this.extractHikvisionImages(
+        data.rawData.decodes[0],
+        eventId,
+        images,
+      );
     }
     // Axis cameras: images in SOAP envelope
     else if (
@@ -338,10 +341,10 @@ export class AnprFolderImportService {
       return 'GRN01'; // Default fallback
     }
 
-    const lowerCameraName = cameraName.toLowerCase().replace(/[_\s&\-]/g, '');
+    const lowerCameraName = cameraName.toLowerCase().replace(/[_\s&-]/g, '');
 
     for (const [pattern, siteId] of Object.entries(this.sitePatterns)) {
-      if (lowerCameraName.includes(pattern.replace(/[_\s&\-]/g, ''))) {
+      if (lowerCameraName.includes(pattern.replace(/[_\s&-]/g, ''))) {
         return siteId;
       }
     }
