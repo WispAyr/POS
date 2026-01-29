@@ -340,11 +340,17 @@ export function PCNBatchExport() {
                   {/* Entry Images */}
                   <div className="relative group overflow-hidden aspect-video">
                     <ImageWithLoader
-                      src={viewingPcn.metadata?.entryImages?.find((img) => img.type === 'overview')?.url}
+                      src={
+                        viewingPcn.metadata?.entryImages?.find(
+                          (img) => img.type === 'overview',
+                        )?.url
+                      }
                       alt="Entry Overview"
                       className="w-full h-full object-cover cursor-pointer"
                       onClick={() => {
-                        const url = viewingPcn.metadata?.entryImages?.find((img) => img.type === 'overview')?.url;
+                        const url = viewingPcn.metadata?.entryImages?.find(
+                          (img) => img.type === 'overview',
+                        )?.url;
                         if (url) window.open(url, '_blank');
                       }}
                     />
@@ -354,11 +360,17 @@ export function PCNBatchExport() {
                   </div>
                   <div className="relative group overflow-hidden aspect-video">
                     <ImageWithLoader
-                      src={viewingPcn.metadata?.entryImages?.find((img) => img.type === 'plate')?.url}
+                      src={
+                        viewingPcn.metadata?.entryImages?.find(
+                          (img) => img.type === 'plate',
+                        )?.url
+                      }
                       alt="Entry Plate"
                       className="w-full h-full object-cover cursor-pointer"
                       onClick={() => {
-                        const url = viewingPcn.metadata?.entryImages?.find((img) => img.type === 'plate')?.url;
+                        const url = viewingPcn.metadata?.entryImages?.find(
+                          (img) => img.type === 'plate',
+                        )?.url;
                         if (url) window.open(url, '_blank');
                       }}
                     />
@@ -369,11 +381,17 @@ export function PCNBatchExport() {
                   {/* Exit Images */}
                   <div className="relative group overflow-hidden aspect-video">
                     <ImageWithLoader
-                      src={viewingPcn.metadata?.exitImages?.find((img) => img.type === 'overview')?.url}
+                      src={
+                        viewingPcn.metadata?.exitImages?.find(
+                          (img) => img.type === 'overview',
+                        )?.url
+                      }
                       alt="Exit Overview"
                       className="w-full h-full object-cover cursor-pointer"
                       onClick={() => {
-                        const url = viewingPcn.metadata?.exitImages?.find((img) => img.type === 'overview')?.url;
+                        const url = viewingPcn.metadata?.exitImages?.find(
+                          (img) => img.type === 'overview',
+                        )?.url;
                         if (url) window.open(url, '_blank');
                       }}
                     />
@@ -383,11 +401,17 @@ export function PCNBatchExport() {
                   </div>
                   <div className="relative group overflow-hidden aspect-video">
                     <ImageWithLoader
-                      src={viewingPcn.metadata?.exitImages?.find((img) => img.type === 'plate')?.url}
+                      src={
+                        viewingPcn.metadata?.exitImages?.find(
+                          (img) => img.type === 'plate',
+                        )?.url
+                      }
                       alt="Exit Plate"
                       className="w-full h-full object-cover cursor-pointer"
                       onClick={() => {
-                        const url = viewingPcn.metadata?.exitImages?.find((img) => img.type === 'plate')?.url;
+                        const url = viewingPcn.metadata?.exitImages?.find(
+                          (img) => img.type === 'plate',
+                        )?.url;
                         if (url) window.open(url, '_blank');
                       }}
                     />
