@@ -12,6 +12,7 @@ import { AuditModule } from './audit/audit.module';
 import { BuildModule } from './build/build.module';
 import { PaymentModule } from './payment/payment.module';
 import { CommonModule } from './common/common.module';
+import { PlateReviewModule } from './plate-review/plate-review.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -44,6 +45,7 @@ import { AppController } from './app.controller';
     BuildModule,
     PaymentModule,
     CommonModule,
+    PlateReviewModule,
   ],
   controllers: [AppController],
 })

@@ -5,6 +5,9 @@ import { Movement, Site } from '../../domain/entities';
 import { IngestAnprDto } from '../dto/ingest-anpr.dto';
 import { SessionService } from '../../engine/services/session.service';
 import { AuditService } from '../../audit/audit.service';
+import { PlateValidationService } from '../../plate-review/services/plate-validation.service';
+import { PlateReviewService } from '../../plate-review/services/plate-review.service';
+import { ValidationStatus } from '../../domain/entities/plate-review.entity';
 
 @Injectable()
 export class AnprIngestionService {
@@ -17,6 +20,8 @@ export class AnprIngestionService {
     private readonly siteRepo: Repository<Site>,
     private readonly sessionService: SessionService,
     private readonly auditService: AuditService,
+    private readonly plateValidationService: PlateValidationService,
+    private readonly plateReviewService: PlateReviewService,
   ) {}
 
   async ingest(
@@ -78,6 +83,12 @@ export class AnprIngestionService {
     const vrm = vrmRaw.toUpperCase().replace(/\s/g, '');
     const timestamp = new Date(dto.timestamp);
 
+    // Validate the plate and detect if it's suspicious
+    const suspicionResult = await this.plateValidationService.detectSuspiciousPlate(
+      vrm,
+      dto.confidence,
+    );
+
     // Check for existing movement to avoid duplicates
     const existing = await this.movementRepo.findOne({
       where: {
@@ -119,6 +130,7 @@ export class AnprIngestionService {
       cameraIds: dto.cameraId,
       direction: direction,
       images: dto.images || [],
+      requiresReview: suspicionResult.isSuspicious,
       rawData: {
         ...dto,
         source: dto.source || dto.cameraType,
@@ -126,18 +138,34 @@ export class AnprIngestionService {
     });
 
     const saved = await this.movementRepo.save(movement);
-    this.logger.log(`Ingested movement: ${saved.id} for VRM ${saved.vrm}`);
+    this.logger.log(`Ingested movement: ${saved.id} for VRM ${saved.vrm}${suspicionResult.isSuspicious ? ' (requires review)' : ''}`);
 
     // Audit log movement ingestion (isNew = true since we just created it)
-    await this.auditService.logMovementIngestion(saved, true, undefined);
+    const ingestionAuditLog = await this.auditService.logMovementIngestion(saved, true, undefined);
 
-    // Trigger Session Processing
-    await this.sessionService.processMovement(saved).catch((err) => {
-      this.logger.error(
-        `Error processing session for movement ${saved.id}`,
-        err.stack,
+    // If plate is suspicious, create a review entry
+    if (suspicionResult.isSuspicious) {
+      await this.plateReviewService.createReviewEntry({
+        movement: saved,
+        validationStatus: suspicionResult.validationResult.validationStatus,
+        suspicionReasons: suspicionResult.reasons,
+        confidence: dto.confidence,
+      });
+
+      this.logger.warn(
+        `Plate ${vrm} flagged for review. Reasons: ${suspicionResult.reasons.join(', ')}`,
       );
-    });
+
+      // Do NOT trigger session processing - wait for human review
+    } else {
+      // Trigger Session Processing only for non-suspicious plates
+      await this.sessionService.processMovement(saved).catch((err) => {
+        this.logger.error(
+          `Error processing session for movement ${saved.id}`,
+          err.stack,
+        );
+      });
+    }
 
     return { movement: saved, isNew: true };
   }
