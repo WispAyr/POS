@@ -71,7 +71,9 @@ export class EnforcementService {
     siteIds?: string[],
     dateFrom?: string,
     dateTo?: string,
-  ): Promise<EnrichedDecision[]> {
+    limit?: number,
+    offset?: number,
+  ): Promise<{ items: EnrichedDecision[]; total: number }> {
     // Return all ENFORCEMENT_CANDIDATEs that are not yet processed
     const query = this.decisionRepo
       .createQueryBuilder('d')
@@ -95,63 +97,93 @@ export class EnforcementService {
 
     const decisions = await query.getMany();
 
-    // Enrich decisions with session and movement data
-    const enriched: EnrichedDecision[] = [];
+    // Batch fetch all sessions for these decisions
+    const sessionIds = decisions
+      .map((d) => d.sessionId)
+      .filter((id): id is string => !!id);
 
-    for (const decision of decisions) {
+    const sessions =
+      sessionIds.length > 0
+        ? await this.sessionRepo
+            .createQueryBuilder('s')
+            .where('s.id IN (:...sessionIds)', { sessionIds })
+            .getMany()
+        : [];
+
+    // Create session map for O(1) lookup
+    const sessionMap = new Map<string, Session>();
+    sessions.forEach((s) => sessionMap.set(s.id, s));
+
+    // Filter decisions by siteIds if provided (before movement fetch to reduce queries)
+    const filteredDecisions = decisions.filter((decision) => {
       const session = decision.sessionId
-        ? await this.sessionRepo.findOne({
-            where: { id: decision.sessionId },
-          })
+        ? sessionMap.get(decision.sessionId)
+        : null;
+      if (!session) return false;
+      if (siteIds && siteIds.length > 0 && !siteIds.includes(session.siteId))
+        return false;
+      return true;
+    });
+
+    // Get total count before pagination
+    const total = filteredDecisions.length;
+
+    // Apply pagination
+    const paginatedDecisions =
+      limit !== undefined
+        ? filteredDecisions.slice(offset || 0, (offset || 0) + limit)
+        : filteredDecisions;
+
+    // Batch fetch all movements for filtered decisions
+    const movementIds = new Set<string>();
+    paginatedDecisions.forEach((d) => {
+      const session = d.sessionId ? sessionMap.get(d.sessionId) : null;
+      if (session?.entryMovementId) movementIds.add(session.entryMovementId);
+      if (session?.exitMovementId) movementIds.add(session.exitMovementId);
+    });
+
+    const movements =
+      movementIds.size > 0
+        ? await this.movementRepo
+            .createQueryBuilder('m')
+            .where('m.id IN (:...movementIds)', {
+              movementIds: Array.from(movementIds),
+            })
+            .getMany()
+        : [];
+
+    // Create movement map for O(1) lookup
+    const movementMap = new Map<string, Movement>();
+    movements.forEach((m) => movementMap.set(m.id, m));
+
+    // Enrich decisions with session and movement data
+    const enriched: EnrichedDecision[] = paginatedDecisions.map((decision) => {
+      const session = sessionMap.get(decision.sessionId!);
+      const entryMovement = session?.entryMovementId
+        ? movementMap.get(session.entryMovementId)
+        : null;
+      const exitMovement = session?.exitMovementId
+        ? movementMap.get(session.exitMovementId)
         : null;
 
-      // Skip if we can't enrich (shouldn't happen in practice)
-      if (!session) continue;
-
-      // Filter by siteIds if provided
-      if (siteIds && siteIds.length > 0 && !siteIds.includes(session.siteId))
-        continue;
-
-      // Collect images from entry and exit movements separately
-      const entryImages: { url: string; type: string }[] = [];
-      const exitImages: { url: string; type: string }[] = [];
-
-      if (session.entryMovementId) {
-        const entryMovement = await this.movementRepo.findOne({
-          where: { id: session.entryMovementId },
-        });
-        if (entryMovement?.images) {
-          entryImages.push(...entryMovement.images);
-        }
-      }
-
-      if (session.exitMovementId) {
-        const exitMovement = await this.movementRepo.findOne({
-          where: { id: session.exitMovementId },
-        });
-        if (exitMovement?.images) {
-          exitImages.push(...exitMovement.images);
-        }
-      }
-
-      enriched.push({
+      return {
         id: decision.id,
-        vrm: session.vrm,
-        siteId: session.siteId,
+        vrm: session!.vrm,
+        siteId: session!.siteId,
         reason: decision.ruleApplied || decision.rationale,
         confidenceScore: decision.params?.confidenceScore || 0.85,
         timestamp: decision.createdAt.toISOString(),
-        durationMinutes: session.durationMinutes,
-        entryTime: session.startTime?.toISOString(),
-        exitTime: session.endTime?.toISOString(),
+        durationMinutes: session!.durationMinutes,
+        entryTime: session!.startTime?.toISOString(),
+        exitTime: session!.endTime?.toISOString(),
         metadata: {
-          entryImages,
-          exitImages,
+          entryImages: entryMovement?.images || [],
+          exitImages: exitMovement?.images || [],
         },
-      });
-    }
+      };
+    });
 
-    return enriched;
+    return { items: enriched, total };
   }
 
   async reviewDecision(
@@ -293,7 +325,11 @@ export class EnforcementService {
   }
 
   // PCN Batch Export
-  async getApprovedPCNs(siteId?: string): Promise<EnrichedDecision[]> {
+  async getApprovedPCNs(
+    siteId?: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<{ items: EnrichedDecision[]; total: number }> {
     const query = this.decisionRepo
       .createQueryBuilder('d')
       .where('d.outcome = :outcome', {
@@ -304,58 +340,92 @@ export class EnforcementService {
 
     const decisions = await query.getMany();
 
-    // Enrich decisions with session and movement data (same as getReviewQueue)
-    const enriched: EnrichedDecision[] = [];
+    // Batch fetch all sessions for these decisions
+    const sessionIds = decisions
+      .map((d) => d.sessionId)
+      .filter((id): id is string => !!id);
 
-    for (const decision of decisions) {
+    const sessions =
+      sessionIds.length > 0
+        ? await this.sessionRepo
+            .createQueryBuilder('s')
+            .where('s.id IN (:...sessionIds)', { sessionIds })
+            .getMany()
+        : [];
+
+    // Create session map for O(1) lookup
+    const sessionMap = new Map<string, Session>();
+    sessions.forEach((s) => sessionMap.set(s.id, s));
+
+    // Filter by siteId if provided
+    const filteredDecisions = decisions.filter((decision) => {
       const session = decision.sessionId
-        ? await this.sessionRepo.findOne({
-            where: { id: decision.sessionId },
-          })
+        ? sessionMap.get(decision.sessionId)
+        : null;
+      if (!session) return false;
+      if (siteId && session.siteId !== siteId) return false;
+      return true;
+    });
+
+    // Get total count before pagination
+    const total = filteredDecisions.length;
+
+    // Apply pagination
+    const paginatedDecisions =
+      limit !== undefined
+        ? filteredDecisions.slice(offset || 0, (offset || 0) + limit)
+        : filteredDecisions;
+
+    // Batch fetch all movements for filtered decisions
+    const movementIds = new Set<string>();
+    paginatedDecisions.forEach((d) => {
+      const session = d.sessionId ? sessionMap.get(d.sessionId) : null;
+      if (session?.entryMovementId) movementIds.add(session.entryMovementId);
+      if (session?.exitMovementId) movementIds.add(session.exitMovementId);
+    });
+
+    const movements =
+      movementIds.size > 0
+        ? await this.movementRepo
+            .createQueryBuilder('m')
+            .where('m.id IN (:...movementIds)', {
+              movementIds: Array.from(movementIds),
+            })
+            .getMany()
+        : [];
+
+    // Create movement map for O(1) lookup
+    const movementMap = new Map<string, Movement>();
+    movements.forEach((m) => movementMap.set(m.id, m));
+
+    // Enrich decisions with session and movement data
+    const enriched: EnrichedDecision[] = paginatedDecisions.map((decision) => {
+      const session = sessionMap.get(decision.sessionId!);
+      const entryMovement = session?.entryMovementId
+        ? movementMap.get(session.entryMovementId)
+        : null;
+      const exitMovement = session?.exitMovementId
+        ? movementMap.get(session.exitMovementId)
         : null;
 
-      if (!session) continue;
-      if (siteId && session.siteId !== siteId) continue;
-
-      const entryImages: { url: string; type: string }[] = [];
-      const exitImages: { url: string; type: string }[] = [];
-
-      if (session.entryMovementId) {
-        const entryMovement = await this.movementRepo.findOne({
-          where: { id: session.entryMovementId },
-        });
-        if (entryMovement?.images) {
-          entryImages.push(...entryMovement.images);
-        }
-      }
-
-      if (session.exitMovementId) {
-        const exitMovement = await this.movementRepo.findOne({
-          where: { id: session.exitMovementId },
-        });
-        if (exitMovement?.images) {
-          exitImages.push(...exitMovement.images);
-        }
-      }
-
-      enriched.push({
+      return {
         id: decision.id,
-        vrm: session.vrm,
-        siteId: session.siteId,
+        vrm: session!.vrm,
+        siteId: session!.siteId,
         reason: decision.ruleApplied || decision.rationale,
         confidenceScore: decision.params?.confidenceScore || 0.85,
         timestamp: decision.createdAt.toISOString(),
-        durationMinutes: session.durationMinutes,
-        entryTime: session.startTime?.toISOString(),
-        exitTime: session.endTime?.toISOString(),
+        durationMinutes: session!.durationMinutes,
+        entryTime: session!.startTime?.toISOString(),
+        exitTime: session!.endTime?.toISOString(),
         metadata: {
-          entryImages,
-          exitImages,
+          entryImages: entryMovement?.images || [],
+          exitImages: exitMovement?.images || [],
         },
-      });
-    }
+      };
+    });
 
-    return enriched;
+    return { items: enriched, total };
   }
 
   async markPCNsAsExported(decisionIds: string[]): Promise<void> {
@@ -374,7 +444,9 @@ export class EnforcementService {
     siteIds?: string[],
     dateFrom?: string,
     dateTo?: string,
-  ): Promise<ParkingEvent[]> {
+    limit?: number,
+    offset?: number,
+  ): Promise<{ items: ParkingEvent[]; total: number }> {
     // Build query with filters
     const query = this.sessionRepo
       .createQueryBuilder('s')
@@ -395,6 +467,14 @@ export class EnforcementService {
       const endDate = new Date(dateTo);
       endDate.setHours(23, 59, 59, 999);
       query.andWhere('s.startTime <= :dateTo', { dateTo: endDate });
+    }
+
+    // Get total count
+    const total = await query.getCount();
+
+    // Apply pagination
+    if (limit !== undefined) {
+      query.skip(offset || 0).take(limit);
     }
 
     const sessions = await query.getMany();
@@ -442,7 +522,7 @@ export class EnforcementService {
     });
 
     // Transform to ParkingEvent objects
-    const events: ParkingEvent[] = sessions.map((session) => {
+    const items: ParkingEvent[] = sessions.map((session) => {
       const decision = decisionMap.get(session.id);
 
       // Determine status
@@ -489,6 +569,21 @@ export class EnforcementService {
       };
     });
 
-    return events;
+    return { items, total };
+  }
+
+  // Combined vehicle details endpoint for reduced API calls
+  async getVehicleDetails(vrm: string): Promise<{
+    history: Awaited<ReturnType<typeof this.getVehicleHistory>>;
+    notes: VehicleNote[];
+    markers: VehicleMarker[];
+  }> {
+    const [history, notes, markers] = await Promise.all([
+      this.getVehicleHistory(vrm),
+      this.getVehicleNotes(vrm),
+      this.getVehicleMarkers(vrm),
+    ]);
+
+    return { history, notes, markers };
   }
 }

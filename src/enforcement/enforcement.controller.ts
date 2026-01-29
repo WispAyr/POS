@@ -12,6 +12,8 @@ export class EnforcementController {
     @Query('siteIds') siteIds?: string,
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
+    @Query('limit') limitStr?: string,
+    @Query('offset') offsetStr?: string,
   ) {
     const siteIdArray = siteIds
       ? siteIds.split(',').filter((s) => s.trim())
@@ -19,11 +21,23 @@ export class EnforcementController {
         ? [siteId]
         : undefined;
 
-    return this.enforcementService.getReviewQueue(
+    const limit = limitStr ? parseInt(limitStr, 10) : 50;
+    const offset = offsetStr ? parseInt(offsetStr, 10) : 0;
+
+    const result = await this.enforcementService.getReviewQueue(
       siteIdArray,
       dateFrom,
       dateTo,
+      limit,
+      offset,
     );
+
+    return {
+      items: result.items,
+      total: result.total,
+      limit,
+      offset,
+    };
   }
 
   @Post('review/:id')
@@ -80,8 +94,26 @@ export class EnforcementController {
   }
 
   @Get('approved')
-  async getApprovedPCNs(@Query('siteId') siteId?: string) {
-    return this.enforcementService.getApprovedPCNs(siteId);
+  async getApprovedPCNs(
+    @Query('siteId') siteId?: string,
+    @Query('limit') limitStr?: string,
+    @Query('offset') offsetStr?: string,
+  ) {
+    const limit = limitStr ? parseInt(limitStr, 10) : 50;
+    const offset = offsetStr ? parseInt(offsetStr, 10) : 0;
+
+    const result = await this.enforcementService.getApprovedPCNs(
+      siteId,
+      limit,
+      offset,
+    );
+
+    return {
+      items: result.items,
+      total: result.total,
+      limit,
+      offset,
+    };
   }
 
   @Post('export')
@@ -94,15 +126,34 @@ export class EnforcementController {
     @Query('siteIds') siteIds?: string,
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
+    @Query('limit') limitStr?: string,
+    @Query('offset') offsetStr?: string,
   ) {
     const siteIdArray = siteIds
       ? siteIds.split(',').filter((s) => s.trim())
       : undefined;
 
-    return this.enforcementService.getAllParkingEvents(
+    const limit = limitStr ? parseInt(limitStr, 10) : undefined;
+    const offset = offsetStr ? parseInt(offsetStr, 10) : 0;
+
+    const result = await this.enforcementService.getAllParkingEvents(
       siteIdArray,
       dateFrom,
       dateTo,
+      limit,
+      offset,
     );
+
+    return {
+      items: result.items,
+      total: result.total,
+      limit,
+      offset,
+    };
+  }
+
+  @Get('vehicle/:vrm/details')
+  async getVehicleDetails(@Param('vrm') vrm: string) {
+    return this.enforcementService.getVehicleDetails(vrm);
   }
 }
