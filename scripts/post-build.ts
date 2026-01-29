@@ -1,9 +1,12 @@
 #!/usr/bin/env ts-node
 /**
  * Post-Build Script
- * 
+ *
  * Logs build completion after successful build.
  * This should be called after npm run build completes successfully.
+ *
+ * Note: In CI environments (when CI=true), this script skips database operations
+ * and exits successfully to allow builds to proceed without a database connection.
  */
 
 import { NestFactory } from '@nestjs/core';
@@ -13,7 +16,13 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
 async function bootstrap() {
-    const app = await NestFactory.createApplicationContext(AppModule);
+  // Skip build audit in CI environments where database is not available
+  if (process.env.CI === 'true' || process.env.SKIP_BUILD_AUDIT === 'true') {
+    console.log('Skipping post-build audit (CI environment detected)');
+    process.exit(0);
+  }
+
+  const app = await NestFactory.createApplicationContext(AppModule);
     const buildService = app.get(BuildService);
 
     try {
