@@ -67,11 +67,8 @@ export function EventsView() {
     fetch(`${API_BASE}/api/sites`)
       .then((res) => res.json())
       .then((data) => {
-        // Only include sites with camera configs (active sites)
-        const activeSites = data.filter(
-          (s: Site & { config?: { cameras?: unknown[] } }) =>
-            s.config?.cameras && s.config.cameras.length > 0,
-        );
+        // Show all active sites
+        const activeSites = data.filter((s: Site & { active?: boolean }) => s.active !== false);
         setSites(activeSites);
       })
       .catch(console.error);
