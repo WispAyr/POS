@@ -61,9 +61,20 @@ Ingest an ANPR (Automatic Number Plate Recognition) event from a camera.
 
 **Notes:**
 - VRM is normalized (uppercase, spaces removed)
+- Plate validation automatically detects suspicious plates
+- Suspicious plates are flagged for human review before processing
 - Direction is determined from site camera configuration
 - Duplicate movements (same VRM, site, timestamp) are detected
-- Session processing is triggered automatically
+- Session processing is triggered automatically (unless plate requires review)
+
+**Plate Validation:**
+- Plates are validated against UK and international formats
+- Suspicious plates are flagged based on:
+  - Low confidence scores (< 0.8)
+  - Invalid format
+  - Special characters
+  - Suspicious patterns (repeated characters, all zeros, etc.)
+- Suspicious plates are queued for human review at `/plate-review/queue`
 
 ---
 
@@ -298,6 +309,374 @@ Serve a stored image file.
 **Notes:**
 - Images are stored in `uploads/images/`
 - Filename format: `{uuid}-{type}.{ext}`
+
+---
+
+## Plate Review Endpoints
+
+### GET /plate-review/queue
+
+Get the plate review queue with optional filters.
+
+**Query Parameters:**
+- `siteId` (optional): Filter by site ID
+- `validationStatus` (optional): Filter by validation status (UK_VALID, INTERNATIONAL_VALID, UK_SUSPICIOUS, INTERNATIONAL_SUSPICIOUS, INVALID)
+- `reviewStatus` (optional): Filter by review status (PENDING, APPROVED, CORRECTED, DISCARDED)
+- `startDate` (optional): Filter by start date (ISO 8601)
+- `endDate` (optional): Filter by end date (ISO 8601)
+- `limit` (optional, default: 50): Items per page
+- `offset` (optional, default: 0): Pagination offset
+
+**Response:**
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "movementId": "uuid",
+      "originalVrm": "string",
+      "normalizedVrm": "string",
+      "siteId": "string",
+      "timestamp": "ISO 8601 date",
+      "confidence": 0.65,
+      "suspicionReasons": ["LOW_CONFIDENCE:0.65", "SUSPICIOUS_PATTERN"],
+      "validationStatus": "UK_SUSPICIOUS",
+      "reviewStatus": "PENDING",
+      "correctedVrm": null,
+      "reviewedBy": null,
+      "reviewedAt": null,
+      "reviewNotes": null,
+      "images": [{"url": "string", "type": "plate"}],
+      "metadata": {...}
+    }
+  ],
+  "total": 25,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+---
+
+### GET /plate-review/:id
+
+Get a single plate review entry by ID.
+
+**Path Parameters:**
+- `id`: Review ID (UUID)
+
+**Response:**
+
+```json
+{
+  "id": "uuid",
+  "movementId": "uuid",
+  "originalVrm": "string",
+  "normalizedVrm": "string",
+  "siteId": "string",
+  "timestamp": "ISO 8601 date",
+  "confidence": 0.65,
+  "suspicionReasons": ["LOW_CONFIDENCE:0.65"],
+  "validationStatus": "UK_SUSPICIOUS",
+  "reviewStatus": "PENDING",
+  "images": [...],
+  "metadata": {...}
+}
+```
+
+---
+
+### POST /plate-review/:id/approve
+
+Approve a plate as correct (VRM is valid as captured).
+
+**Path Parameters:**
+- `id`: Review ID (UUID)
+
+**Request Body:**
+
+```json
+{
+  "userId": "string (required)",
+  "notes": "string (optional)"
+}
+```
+
+**Response:**
+
+```json
+{
+  "id": "uuid",
+  "reviewStatus": "APPROVED",
+  "reviewedBy": "operator-id",
+  "reviewedAt": "ISO 8601 date",
+  "reviewNotes": "Verified correct"
+}
+```
+
+**Notes:**
+- Movement is automatically reprocessed through session service
+- Audit log entry created with action `PLATE_REVIEW_APPROVED`
+
+---
+
+### POST /plate-review/:id/correct
+
+Correct a plate with a new VRM.
+
+**Path Parameters:**
+- `id`: Review ID (UUID)
+
+**Request Body:**
+
+```json
+{
+  "userId": "string (required)",
+  "correctedVrm": "string (required)",
+  "notes": "string (optional)"
+}
+```
+
+**Response:**
+
+```json
+{
+  "id": "uuid",
+  "reviewStatus": "CORRECTED",
+  "correctedVrm": "AB12CDE",
+  "reviewedBy": "operator-id",
+  "reviewedAt": "ISO 8601 date",
+  "reviewNotes": "Corrected OCR error"
+}
+```
+
+**Notes:**
+- Movement VRM is updated with corrected value
+- Movement is automatically reprocessed through session service
+- Audit log entry created with action `PLATE_REVIEW_CORRECTED`
+
+---
+
+### POST /plate-review/:id/discard
+
+Discard a plate as invalid/corrupted.
+
+**Path Parameters:**
+- `id`: Review ID (UUID)
+
+**Request Body:**
+
+```json
+{
+  "userId": "string (required)",
+  "reason": "string (required)"
+}
+```
+
+**Response:**
+
+```json
+{
+  "id": "uuid",
+  "reviewStatus": "DISCARDED",
+  "reviewedBy": "operator-id",
+  "reviewedAt": "ISO 8601 date",
+  "reviewNotes": "Corrupted image, no plate visible"
+}
+```
+
+**Notes:**
+- Movement is NOT processed through session service
+- Audit log entry created with action `PLATE_REVIEW_DISCARDED`
+
+---
+
+### POST /plate-review/bulk-approve
+
+Bulk approve multiple plate reviews.
+
+**Request Body:**
+
+```json
+{
+  "userId": "string (required)",
+  "reviewIds": ["uuid", "uuid", ...]
+}
+```
+
+**Response:**
+
+```json
+[
+  {"id": "uuid", "reviewStatus": "APPROVED", ...},
+  {"id": "uuid", "reviewStatus": "APPROVED", ...}
+]
+```
+
+---
+
+### POST /plate-review/bulk-discard
+
+Bulk discard multiple plate reviews.
+
+**Request Body:**
+
+```json
+{
+  "userId": "string (required)",
+  "reviewIds": ["uuid", "uuid", ...],
+  "reason": "string (required)"
+}
+```
+
+**Response:**
+
+```json
+[
+  {"id": "uuid", "reviewStatus": "DISCARDED", ...},
+  {"id": "uuid", "reviewStatus": "DISCARDED", ...}
+]
+```
+
+---
+
+### GET /plate-review/:id/suggestions
+
+Get AI-powered correction suggestions for a plate review.
+
+**Path Parameters:**
+- `id`: Review ID (UUID)
+
+**Response:**
+
+```json
+[
+  {
+    "originalVrm": "0OO123ABC",
+    "suggestedVrm": "000123ABC",
+    "reason": "Position 1: Zero to letter O",
+    "confidence": 0.8
+  },
+  {
+    "originalVrm": "0OO123ABC",
+    "suggestedVrm": "OOO123ABC",
+    "reason": "Position 1: Letter O to zero",
+    "confidence": 0.8
+  }
+]
+```
+
+**Notes:**
+- Suggestions based on common OCR errors (0/O, 1/I, 5/S, 8/B, 2/Z, 6/G)
+- Only valid corrections are returned (validated against UK/international patterns)
+- Sorted by confidence score (descending)
+
+---
+
+### GET /plate-review/stats/summary
+
+Get statistics for the plate review queue.
+
+**Query Parameters:**
+- `siteId` (optional): Filter by site ID
+
+**Response:**
+
+```json
+{
+  "totalPending": 15,
+  "totalApproved": 42,
+  "totalCorrected": 8,
+  "totalDiscarded": 3,
+  "total": 68,
+  "byValidationStatus": {
+    "ukSuspicious": 10,
+    "internationalSuspicious": 3,
+    "invalid": 2
+  }
+}
+```
+
+---
+
+### POST /plate-review/validate
+
+Validate a VRM against UK and international patterns (utility endpoint).
+
+**Request Body:**
+
+```json
+{
+  "vrm": "string (required)"
+}
+```
+
+**Response:**
+
+```json
+{
+  "isValid": true,
+  "validationStatus": "UK_VALID",
+  "matchedRegion": "UK",
+  "matchedPattern": "UK Standard (2001 onwards)"
+}
+```
+
+---
+
+### POST /plate-review/detect-suspicious
+
+Detect if a VRM is suspicious (utility endpoint).
+
+**Request Body:**
+
+```json
+{
+  "vrm": "string (required)",
+  "confidence": 0.65
+}
+```
+
+**Response:**
+
+```json
+{
+  "isSuspicious": true,
+  "reasons": ["LOW_CONFIDENCE:0.65", "SUSPICIOUS_PATTERN"],
+  "validationResult": {
+    "isValid": false,
+    "validationStatus": "INVALID"
+  }
+}
+```
+
+---
+
+### POST /plate-review/suggest-corrections
+
+Get correction suggestions for a VRM (utility endpoint).
+
+**Request Body:**
+
+```json
+{
+  "vrm": "string (required)"
+}
+```
+
+**Response:**
+
+```json
+[
+  {
+    "originalVrm": "0OO123",
+    "suggestedVrm": "000123",
+    "reason": "Position 1: Zero to letter O",
+    "confidence": 0.8
+  }
+]
+```
 
 ---
 

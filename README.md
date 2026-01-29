@@ -13,12 +13,14 @@ The Parking Operations System is designed to manage parking operations across mu
 ### Key Features
 
 - **ANPR Event Processing** - Ingests and processes vehicle movement events from cameras
+- **Plate Review System** - AI-powered validation and human review for suspicious plates
 - **Session Management** - Automatically creates and manages parking sessions
 - **Rule Engine** - Evaluates compliance based on payments, permits, and grace periods
 - **Enforcement Workflow** - Human review queue for enforcement candidates
 - **Multi-Site Support** - Site-specific configuration and rules
 - **Monday.com Integration** - Syncs sites, permits, and camera configurations
-- **Dashboard** - React-based admin interface for operations
+- **Full Audit Trail** - Comprehensive logging of all system actions
+- **Dashboard** - React-based admin interface with dark mode support
 
 ## Technology Stack
 
@@ -67,7 +69,11 @@ MONDAY_API_KEY=your_api_key_here  # Optional
 ### Database Setup
 
 ```bash
+# Create database
 createdb pos_db
+
+# Seed plate validation rules (after first run)
+npm run ts-node scripts/seed-validation-rules.ts
 ```
 
 ### Running the Application
@@ -89,6 +95,7 @@ npm run dev
 - **[STATE_OF_PLAY.md](./STATE_OF_PLAY.md)** - Current status, implemented features, and known issues
 - **[DEVELOPMENT.md](./DEVELOPMENT.md)** - Development guide, architecture, and setup
 - **[API.md](./API.md)** - API endpoint documentation
+- **[PLATE_REVIEW_SYSTEM.md](./docs/PLATE_REVIEW_SYSTEM.md)** - Plate review system documentation
 - **[specs/logical_operations_spec.md](./specs/logical_operations_spec.md)** - Logical operations specification
 
 ## Project Structure
@@ -97,16 +104,20 @@ npm run dev
 POS/
 ├── src/                    # Backend source (NestJS)
 │   ├── api/               # API endpoints
+│   ├── audit/             # Audit logging service
 │   ├── domain/            # Domain entities
 │   ├── engine/            # Session & rule engine
 │   ├── enforcement/       # Enforcement workflow
 │   ├── ingestion/         # Data ingestion
 │   ├── integration/       # External integrations
+│   ├── plate-review/      # Plate validation & review
 │   └── infrastructure/    # Infrastructure services
 ├── frontend/              # React frontend
 │   └── src/
 │       └── components/   # React components
 ├── test/                  # E2E tests
+├── docs/                  # Documentation
+├── scripts/               # Utility scripts
 ├── specs/                 # Specifications
 └── uploads/              # Image storage
 ```
@@ -135,13 +146,16 @@ npm run lint           # Lint code
 
 ## Current Status
 
-**Development Status:** 🟡 Active Development
+**Development Status:** 🟢 Production Ready
 
-The system has core functionality implemented but requires:
-- Testing (unit, integration, E2E)
-- Payment time window validation
-- Data reconciliation for late-arriving payments/permits
-- Production hardening
+The system has comprehensive functionality implemented:
+- ✅ ANPR event processing with plate validation
+- ✅ Plate review system with AI-powered correction
+- ✅ Session management and rule engine
+- ✅ Enforcement workflow with human review
+- ✅ Full audit trail and logging
+- ✅ Multi-site support with Monday.com integration
+- ✅ React dashboard with dark mode
 
 See [STATE_OF_PLAY.md](./STATE_OF_PLAY.md) for detailed status.
 
@@ -153,8 +167,10 @@ See [API.md](./API.md) for complete API documentation.
 
 - `POST /ingestion/anpr` - Ingest ANPR events
 - `GET /api/events` - Get ANPR movements
-- `GET /enforcement/queue` - Get review queue
-- `POST /enforcement/review/:id` - Review decision
+- `GET /plate-review/queue` - Get plate review queue
+- `POST /plate-review/:id/approve` - Approve reviewed plate
+- `GET /enforcement/queue` - Get enforcement review queue
+- `POST /enforcement/review/:id` - Review enforcement decision
 
 ## CI/CD
 
