@@ -10,6 +10,7 @@ import { PermitsView } from './components/PermitsView';
 import { AuditView } from './components/AuditView';
 import { BuildAuditView } from './components/BuildAuditView';
 import { PaymentTrackingView } from './components/PaymentTrackingView';
+import PlateReviewQueue from './components/PlateReviewQueue';
 import {
   LayoutDashboard,
   Map as MapIcon,
@@ -24,6 +25,7 @@ import {
   CreditCard,
   FileDown,
   List,
+  ScanEye,
 } from 'lucide-react';
 
 function App() {
@@ -75,6 +77,13 @@ function App() {
           >
             <MapIcon className="w-5 h-5" />
             Sites
+          </button>
+          <button
+            onClick={() => setCurrentView('plate-review')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'plate-review' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+          >
+            <ScanEye className="w-5 h-5" />
+            Plate Review
           </button>
           <button
             onClick={() => setCurrentView('enforcement')}
@@ -165,9 +174,11 @@ function App() {
                               ? 'Payment Tracking'
                               : currentView === 'pcn-export'
                                 ? 'PCN Batch Export'
-                                : currentView === 'settings'
-                                  ? 'System Settings'
-                                  : 'Enforcement Review'}
+                                : currentView === 'plate-review'
+                                  ? 'Plate Review Queue'
+                                  : currentView === 'settings'
+                                    ? 'System Settings'
+                                    : 'Enforcement Review'}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 mt-1 transition-colors">
               Real-time parking operations overview
@@ -195,6 +206,7 @@ function App() {
         <div className="transition-all duration-300">
           {currentView === 'dashboard' && <DashboardStats />}
           {currentView === 'sites' && <SitesList />}
+          {currentView === 'plate-review' && <PlateReviewQueue />}
           {currentView === 'enforcement' && <EnforcementReview />}
           {currentView === 'pcn-export' && <PCNBatchExport />}
           {currentView === 'events' && <EventsView />}

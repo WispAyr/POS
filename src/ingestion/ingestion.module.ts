@@ -16,6 +16,7 @@ import { ImageService } from './services/image.service';
 import { AnprPollerController } from './anpr-poller.controller';
 import { HttpModule } from '@nestjs/axios';
 import { IntegrationModule } from '../integration/integration.module';
+import { PlateReviewModule } from '../plate-review/plate-review.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { IntegrationModule } from '../integration/integration.module';
     HttpModule,
     ConfigModule,
     forwardRef(() => IntegrationModule),
+    PlateReviewModule, // Provides PlateValidationService and PlateReviewService
     TypeOrmModule.forFeature([Movement, Site, Payment, Permit]),
   ],
   controllers: [IngestionController, AnprPollerController],

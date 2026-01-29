@@ -41,7 +41,8 @@
       "Bash(npm run typeorm:*)",
       "Bash(psql:*)",
       "Bash(npm run build:*)",
-      "Bash(npm run fix-sessions:*)"
+      "Bash(npm run fix-sessions:*)",
+      "Bash(npx vite build:*)"
     ]
   }
 }

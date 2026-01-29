@@ -38,6 +38,9 @@ export class Movement {
   @Column({ type: 'jsonb' })
   rawData: any; // Immutable original record
 
+  @Column({ type: 'boolean', default: false })
+  requiresReview: boolean; // Flag for plates needing human review
+
   @CreateDateColumn()
   ingestedAt: Date;
 }

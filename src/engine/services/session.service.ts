@@ -21,6 +21,14 @@ export class SessionService {
   async processMovement(movement: Movement): Promise<void> {
     this.logger.log(`Processing movement ${movement.id} for session logic`);
 
+    // Skip processing if movement requires human review
+    if (movement.requiresReview) {
+      this.logger.log(
+        `Movement ${movement.id} requires human review. Skipping session processing.`,
+      );
+      return;
+    }
+
     if (movement.direction === 'ENTRY') {
       await this.handleEntry(movement);
     } else if (movement.direction === 'EXIT') {
