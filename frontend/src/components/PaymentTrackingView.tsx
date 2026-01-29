@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CreditCard, CheckCircle, XCircle, Clock, TrendingUp, DollarSign, Search, RefreshCw, AlertCircle, Filter } from 'lucide-react';
 
-const API_BASE = 'http://localhost:3000';
+const API_BASE = '';
 
 interface Payment {
     id: string;

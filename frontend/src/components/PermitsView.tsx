@@ -72,7 +72,7 @@ const PermitRow = ({ permit, onDelete, sites }: { permit: Permit; onDelete: (id:
         </td>
     </tr>
 );
-const API_BASE = 'http://localhost:3000';
+const API_BASE = '';
 
 export function PermitsView() {
     const [permits, setPermits] = useState<Permit[]>([]);

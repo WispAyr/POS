@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Package, GitBranch, Calendar, CheckCircle, XCircle, Clock, AlertCircle, Download, RefreshCw } from 'lucide-react';
 
-const API_BASE = 'http://localhost:3000';
+const API_BASE = '';
 
 interface VersionInfo {
     backend?: string;
