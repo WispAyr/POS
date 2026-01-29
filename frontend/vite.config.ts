@@ -51,6 +51,10 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true,
       },
+      '/plate-review': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
     },
   },
 });
