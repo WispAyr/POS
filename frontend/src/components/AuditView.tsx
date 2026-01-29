@@ -1,14 +1,5 @@
-import { useState, useEffect } from 'react';
-import {
-  Search,
-  Clock,
-  User,
-  FileText,
-  ChevronRight,
-  Filter,
-  Download,
-  Eye,
-} from 'lucide-react';
+import { useState } from 'react';
+import { Search, Clock, User, FileText, Download, Eye } from 'lucide-react';
 
 const API_BASE = 'http://localhost:3001';
 
