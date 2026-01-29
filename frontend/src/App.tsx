@@ -11,6 +11,8 @@ import { AuditView } from './components/AuditView';
 import { BuildAuditView } from './components/BuildAuditView';
 import { PaymentTrackingView } from './components/PaymentTrackingView';
 import PlateReviewQueue from './components/PlateReviewQueue';
+import { AlarmDashboard } from './components/AlarmDashboard';
+import { AlarmNotificationBell } from './components/AlarmNotificationBell';
 import {
   LayoutDashboard,
   Map as MapIcon,
@@ -26,6 +28,7 @@ import {
   FileDown,
   List,
   ScanEye,
+  Bell,
 } from 'lucide-react';
 
 function App() {
@@ -46,6 +49,15 @@ function App() {
     }
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // Listen for navigation events from notification bell
+  useEffect(() => {
+    const handleNavigate = (event: CustomEvent) => {
+      setCurrentView(event.detail);
+    };
+    window.addEventListener('navigate', handleNavigate as EventListener);
+    return () => window.removeEventListener('navigate', handleNavigate as EventListener);
+  }, []);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
@@ -142,6 +154,13 @@ function App() {
             Payment Tracking
           </button>
           <button
+            onClick={() => setCurrentView('alarms')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'alarms' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+          >
+            <Bell className="w-5 h-5" />
+            Alarms
+          </button>
+          <button
             onClick={() => setCurrentView('settings')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'settings' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
           >
@@ -172,19 +191,22 @@ function App() {
                             ? 'Build History & Version'
                             : currentView === 'payments'
                               ? 'Payment Tracking'
-                              : currentView === 'pcn-export'
-                                ? 'PCN Batch Export'
-                                : currentView === 'plate-review'
-                                  ? 'Plate Review Queue'
-                                  : currentView === 'settings'
-                                    ? 'System Settings'
-                                    : 'Enforcement Review'}
+                              : currentView === 'alarms'
+                                ? 'Alarm Centre'
+                                : currentView === 'pcn-export'
+                                  ? 'PCN Batch Export'
+                                  : currentView === 'plate-review'
+                                    ? 'Plate Review Queue'
+                                    : currentView === 'settings'
+                                      ? 'System Settings'
+                                      : 'Enforcement Review'}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 mt-1 transition-colors">
               Real-time parking operations overview
             </p>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
+            <AlarmNotificationBell />
             <button
               onClick={toggleTheme}
               className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all shadow-sm"
@@ -215,6 +237,7 @@ function App() {
           {currentView === 'audit' && <AuditView />}
           {currentView === 'build' && <BuildAuditView />}
           {currentView === 'payments' && <PaymentTrackingView />}
+          {currentView === 'alarms' && <AlarmDashboard />}
           {currentView === 'settings' && <SettingsView />}
         </div>
       </main>

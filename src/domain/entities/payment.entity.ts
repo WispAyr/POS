@@ -11,6 +11,8 @@ import {
 @Index(['expiryTime'])
 @Index(['siteId', 'startTime', 'expiryTime']) // For active payment queries
 @Index(['siteId', 'expiryTime']) // For expiring payments queries
+@Index(['providerId']) // For provider-based queries
+@Index(['ingestionLogId']) // For ingestion tracking
 export class Payment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -31,13 +33,19 @@ export class Payment {
   expiryTime: Date;
 
   @Column()
-  source: string; // 'APP', 'KIOSK', 'TERM', 'IMPORT'
+  source: string; // 'APP', 'KIOSK', 'TERM', 'IMPORT', 'PROVIDER'
 
   @Column({ type: 'varchar', nullable: true })
   externalReference: string;
 
   @Column({ type: 'jsonb', nullable: true })
   rawData: any;
+
+  @Column({ type: 'uuid', nullable: true })
+  providerId: string | null; // Link to PaymentProvider
+
+  @Column({ type: 'uuid', nullable: true })
+  ingestionLogId: string | null; // Link to PaymentIngestionLog
 
   @CreateDateColumn()
   ingestedAt: Date;

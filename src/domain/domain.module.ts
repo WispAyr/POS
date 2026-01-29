@@ -11,6 +11,12 @@ import {
   BuildAudit,
   VehicleNote,
   VehicleMarker,
+  PaymentProvider,
+  PaymentProviderSite,
+  PaymentIngestionLog,
+  AlarmDefinition,
+  Alarm,
+  AlarmNotification,
 } from './entities';
 
 @Module({
@@ -26,6 +32,12 @@ import {
       BuildAudit,
       VehicleNote,
       VehicleMarker,
+      PaymentProvider,
+      PaymentProviderSite,
+      PaymentIngestionLog,
+      AlarmDefinition,
+      Alarm,
+      AlarmNotification,
     ]),
   ],
   exports: [TypeOrmModule],

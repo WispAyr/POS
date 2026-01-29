@@ -770,6 +770,68 @@ export class AuditService {
   }
 
   /**
+   * Log email fetch from payment provider
+   */
+  async logEmailFetch(
+    providerId: string,
+    providerName: string,
+    emailCount: number,
+    details?: any,
+  ): Promise<AuditLog> {
+    return this.log({
+      entityType: 'PAYMENT_PROVIDER',
+      entityId: providerId,
+      action: 'EMAIL_FETCH',
+      actor: 'SYSTEM',
+      actorType: 'PAYMENT_PROVIDER',
+      details: {
+        providerName,
+        emailCount,
+        ...details,
+      },
+      relatedEntities: [
+        {
+          entityType: 'PAYMENT_PROVIDER',
+          entityId: providerId,
+          relationship: 'FETCHED_FROM',
+        },
+      ],
+    });
+  }
+
+  /**
+   * Log ingestion error from payment provider
+   */
+  async logIngestionError(
+    providerId: string,
+    providerName: string,
+    ingestionLogId: string,
+    error: string,
+    details?: any,
+  ): Promise<AuditLog> {
+    return this.log({
+      entityType: 'PAYMENT_INGESTION_LOG',
+      entityId: ingestionLogId,
+      action: 'INGESTION_ERROR',
+      actor: 'SYSTEM',
+      actorType: 'PAYMENT_PROVIDER',
+      details: {
+        providerId,
+        providerName,
+        error,
+        ...details,
+      },
+      relatedEntities: [
+        {
+          entityType: 'PAYMENT_PROVIDER',
+          entityId: providerId,
+          relationship: 'INGESTED_BY',
+        },
+      ],
+    });
+  }
+
+  /**
    * Get human-readable action description
    */
   private getActionDescription(log: AuditLog): string {
@@ -783,6 +845,9 @@ export class AuditService {
       PERMIT_INGESTED: `Permit ingested for ${log.vrm}`,
       RECONCILIATION_TRIGGERED: `Reconciliation triggered`,
       DECISION_RECONCILED: `Decision reconciled`,
+      PAYMENT_INGESTED_FROM_PROVIDER: `Payment ingested from provider for ${log.vrm}`,
+      EMAIL_FETCH: `Emails fetched from payment provider`,
+      INGESTION_ERROR: `Ingestion error occurred`,
     };
 
     return actionMap[log.action] || log.action;

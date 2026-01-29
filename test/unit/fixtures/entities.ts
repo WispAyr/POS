@@ -6,6 +6,7 @@ import {
   Permit,
   Decision,
   PermitType,
+  PermitSource,
 } from '../../../src/domain/entities';
 import { SessionStatus, DecisionOutcome } from '../../../src/domain/entities';
 
@@ -51,6 +52,7 @@ export const createTestMovement = (
     cameraType: 'hikvision',
     confidence: 0.95,
   },
+  requiresReview: false,
   ingestedAt: new Date(),
   ...overrides,
 });
@@ -82,6 +84,8 @@ export const createTestPayment = (overrides?: Partial<Payment>): Payment => ({
   rawData: {
     transactionId: 'TXN-123',
   },
+  providerId: null,
+  ingestionLogId: null,
   ingestedAt: new Date(),
   ...overrides,
 });
@@ -95,6 +99,8 @@ export const createTestPermit = (overrides?: Partial<Permit>): Permit => ({
   endDate: null, // Indefinite
   active: true,
   mondayItemId: null,
+  source: PermitSource.MANUAL,
+  metadata: null,
   createdAt: new Date(),
   ...overrides,
 });

@@ -13,6 +13,8 @@ import { BuildModule } from './build/build.module';
 import { PaymentModule } from './payment/payment.module';
 import { CommonModule } from './common/common.module';
 import { PlateReviewModule } from './plate-review/plate-review.module';
+import { PaymentProviderModule } from './payment-provider/payment-provider.module';
+import { AlarmModule } from './alarm/alarm.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -46,6 +48,8 @@ import { AppController } from './app.controller';
     PaymentModule,
     CommonModule,
     PlateReviewModule,
+    PaymentProviderModule,
+    AlarmModule,
   ],
   controllers: [AppController],
 })
