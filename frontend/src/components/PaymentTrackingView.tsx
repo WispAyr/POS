@@ -3,8 +3,6 @@ import {
   CreditCard,
   CheckCircle,
   XCircle,
-  Clock,
-  TrendingUp,
   DollarSign,
   Search,
   RefreshCw,

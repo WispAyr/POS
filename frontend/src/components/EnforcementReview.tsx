@@ -3,7 +3,6 @@ import axios from 'axios';
 import {
   Check,
   X,
-  AlertTriangle,
   Clock,
   MapPin,
   Car,
@@ -87,9 +86,10 @@ export function EnforcementReview() {
 
   // Notes
   const [decisionNote, setDecisionNote] = useState('');
-  const [newVehicleNote, setNewVehicleNote] = useState('');
-  const [newMarkerType, setNewMarkerType] = useState('');
-  const [newMarkerDesc, setNewMarkerDesc] = useState('');
+  // TODO: Uncomment when vehicle note/marker UI is implemented
+  // const [newVehicleNote, setNewVehicleNote] = useState('');
+  // const [newMarkerType, setNewMarkerType] = useState('');
+  // const [newMarkerDesc, setNewMarkerDesc] = useState('');
 
   // Fetch sites
   const fetchSites = async () => {
@@ -217,34 +217,11 @@ export function EnforcementReview() {
     setCurrentDecision(nextDecision);
   };
 
-  const handleAddVehicleNote = async () => {
-    if (!currentDecision || !newVehicleNote.trim()) return;
-    try {
-      await axios.post(`/enforcement/vehicle/${currentDecision.vrm}/notes`, {
-        note: newVehicleNote,
-        createdBy: 'operator-1',
-      });
-      setNewVehicleNote('');
-      fetchVehicleData(currentDecision.vrm);
-    } catch (error) {
-      console.error('Failed to add note', error);
-    }
-  };
+  // TODO: Implement UI for adding vehicle notes
+  // const handleAddVehicleNote = async () => { ... }
 
-  const handleAddMarker = async () => {
-    if (!currentDecision || !newMarkerType.trim()) return;
-    try {
-      await axios.post(`/enforcement/vehicle/${currentDecision.vrm}/markers`, {
-        markerType: newMarkerType,
-        description: newMarkerDesc,
-      });
-      setNewMarkerType('');
-      setNewMarkerDesc('');
-      fetchVehicleData(currentDecision.vrm);
-    } catch (error) {
-      console.error('Failed to add marker', error);
-    }
-  };
+  // TODO: Implement UI for adding markers
+  // const handleAddMarker = async () => { ... }
 
   const toggleSite = (siteId: string) => {
     const newSelection = new Set(selectedSites);
