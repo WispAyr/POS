@@ -60,7 +60,9 @@ export class ReconciliationService {
       order: { startTime: 'DESC' },
     });
 
-    const completedSessions = sessions.filter((s) => s.endTime !== null);
+    const completedSessions = sessions.filter(
+      (s): s is Session & { endTime: Date } => s.endTime !== null,
+    );
 
     // Filter sessions that overlap with payment period
     const overlappingSessions = completedSessions.filter((session) => {

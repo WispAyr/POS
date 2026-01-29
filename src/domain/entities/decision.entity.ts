@@ -21,10 +21,10 @@ export class Decision {
   id: string;
 
   @Column({ nullable: true })
-  sessionId: string;
+  sessionId: string | null;
 
   @Column({ nullable: true })
-  movementId: string;
+  movementId: string | null;
 
   @Column({
     type: 'enum',
@@ -45,7 +45,7 @@ export class Decision {
   isOperatorOverride: boolean;
 
   @Column({ nullable: true })
-  operatorId: string;
+  operatorId: string | null;
 
   @Column({ type: 'jsonb', nullable: true })
   params: any;

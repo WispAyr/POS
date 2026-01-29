@@ -8,7 +8,11 @@ import {
   Decision,
   AuditLog,
 } from '../../../src/domain/entities';
-import { SessionStatus, DecisionOutcome } from '../../../src/domain/entities';
+import {
+  SessionStatus,
+  DecisionOutcome,
+  PermitType,
+} from '../../../src/domain/entities';
 
 /**
  * Test data generator for parking events
@@ -233,7 +237,7 @@ export class TestDataGenerator {
     siteId: string | null,
     vrm: string,
     options: {
-      type?: string;
+      type?: PermitType;
       startDate?: Date;
       endDate?: Date | null;
       active?: boolean;
@@ -243,7 +247,7 @@ export class TestDataGenerator {
     const permit = repo.create({
       siteId,
       vrm,
-      type: options.type || 'WHITELIST',
+      type: options.type || PermitType.WHITELIST,
       startDate: options.startDate || new Date(Date.now() - 86400000), // Yesterday
       endDate: options.endDate === undefined ? null : options.endDate,
       active: options.active !== undefined ? options.active : true,
@@ -292,7 +296,7 @@ export class TestDataGenerator {
     vrm?: string;
     hasPayment?: boolean;
     hasPermit?: boolean;
-    permitType?: string;
+    permitType?: PermitType;
     durationMinutes?: number;
     paymentCoversDuration?: boolean;
     gracePeriodExceeded?: boolean;
@@ -323,7 +327,7 @@ export class TestDataGenerator {
     let permit: Permit | undefined;
     if (scenario.hasPermit) {
       permit = await this.createPermit(scenario.siteId, vrm, {
-        type: scenario.permitType || 'WHITELIST',
+        type: scenario.permitType || PermitType.WHITELIST,
       });
     }
 

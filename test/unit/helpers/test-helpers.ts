@@ -1,6 +1,6 @@
 import { TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 
 /**
  * Creates a test NestJS application from a testing module

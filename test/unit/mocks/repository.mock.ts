@@ -1,6 +1,8 @@
-import { Repository } from 'typeorm';
+import { ObjectLiteral, Repository } from 'typeorm';
 
-export const createMockRepository = <T>(): Partial<Repository<T>> => ({
+export const createMockRepository = <T extends ObjectLiteral>(): Partial<
+  Repository<T>
+> => ({
   findOne: jest.fn(),
   find: jest.fn(),
   findAndCount: jest.fn(),
@@ -10,6 +12,7 @@ export const createMockRepository = <T>(): Partial<Repository<T>> => ({
   delete: jest.fn(),
   remove: jest.fn(),
   count: jest.fn(),
+
   createQueryBuilder: jest.fn(() => ({
     select: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
@@ -28,5 +31,5 @@ export const createMockRepository = <T>(): Partial<Repository<T>> => ({
     getRawMany: jest.fn(),
     getRawOne: jest.fn(),
     execute: jest.fn(),
-  })),
+  })) as any,
 });

@@ -16,7 +16,7 @@ import {
   TestDataCleanup,
   TestScenarios,
 } from '../unit/generators';
-import { Site, DecisionOutcome } from '../../src/domain/entities';
+import { Site, DecisionOutcome, PermitType } from '../../src/domain/entities';
 
 describe('Parking Events - Payment, Whitelist, and Enforcement Tests', () => {
   let app: INestApplication;
@@ -133,7 +133,7 @@ describe('Parking Events - Payment, Whitelist, and Enforcement Tests', () => {
 
       // Create expired permit
       const permit = await generator.createPermit(testSite.id, vrm, {
-        type: 'WHITELIST',
+        type: PermitType.WHITELIST,
         startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
         endDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // Expired yesterday
         active: true,
@@ -158,7 +158,7 @@ describe('Parking Events - Payment, Whitelist, and Enforcement Tests', () => {
 
       // Create inactive permit
       const permit = await generator.createPermit(testSite.id, vrm, {
-        type: 'WHITELIST',
+        type: PermitType.WHITELIST,
         active: false, // Inactive
       });
 
