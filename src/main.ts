@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import * as compression from 'compression';
+import compression from 'compression';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
