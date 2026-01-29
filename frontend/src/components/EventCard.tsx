@@ -21,11 +21,10 @@ export function EventCard({ vrm, siteId, timestamp, direction, cameraIds, images
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     // Resolve relative URLs to full API URLs
-    const API_BASE = 'http://localhost:3000';
     const resolveImageUrl = (url: string | undefined) => {
         if (!url) return undefined;
         if (url.startsWith('http')) return url;
-        return `${API_BASE}${url}`;
+        return url; // Relative URLs will use current origin
     };
 
     const plateImage = resolveImageUrl(images?.find(i => i.type === 'plate')?.url);

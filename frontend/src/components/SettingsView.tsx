@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RefreshCw, Database, Cloud, CheckCircle, XCircle, Clock, Loader2, Server, HardDrive } from 'lucide-react';
+import { RefreshCw, Database, Cloud, CheckCircle, XCircle, Clock, Loader2, Server, HardDrive, Download, Upload, FolderSync } from 'lucide-react';
 
 interface SyncStatus {
     isRunning: boolean;
@@ -9,15 +9,30 @@ interface SyncStatus {
     progress?: number;
 }
 
-const API_BASE = 'http://localhost:3000';
+interface AnprSyncConfig {
+    enabled: boolean;
+    remoteHost: string;
+    remoteUser: string;
+    remotePath: string;
+    localPath: string;
+    sshKeyPath?: string;
+    password?: string;
+    cronExpression?: string;
+}
+
+const API_BASE = '';
 
 export function SettingsView() {
     const [anprSync, setAnprSync] = useState<SyncStatus>({ isRunning: false });
     const [mondaySync, setMondaySync] = useState<SyncStatus>({ isRunning: false });
     const [mondayPermitsSync, setMondayPermitsSync] = useState<SyncStatus>({ isRunning: false });
     const [cameraSync, setCameraSync] = useState<SyncStatus>({ isRunning: false });
+    const [remoteSync, setRemoteSync] = useState<SyncStatus>({ isRunning: false });
+    const [folderImport, setFolderImport] = useState<SyncStatus>({ isRunning: false });
     const [anprHours, setAnprHours] = useState(24);
     const [syncLogs, setSyncLogs] = useState<{ time: string; msg: string; type: 'info' | 'error' | 'success' }[]>([]);
+    const [remoteSyncConfig, setRemoteSyncConfig] = useState<AnprSyncConfig | null>(null);
+    const [localFileCount, setLocalFileCount] = useState<number>(0);
     const [systemStats, setSystemStats] = useState<{
         sessions: number;
         decisions: number;
@@ -56,7 +71,26 @@ export function SettingsView() {
             }
         };
         fetchStats();
-    }, [anprSync.lastRun, mondaySync.lastRun, mondayPermitsSync.lastRun, cameraSync.lastRun]);
+    }, [anprSync.lastRun, mondaySync.lastRun, mondayPermitsSync.lastRun, cameraSync.lastRun, remoteSync.lastRun, folderImport.lastRun]);
+
+    // Fetch ANPR remote sync config and file count
+    useEffect(() => {
+        const fetchSyncConfig = async () => {
+            try {
+                const [configRes, filesRes] = await Promise.all([
+                    fetch(`${API_BASE}/ingestion/anpr/sync/config`),
+                    fetch(`${API_BASE}/ingestion/anpr/sync/files`),
+                ]);
+                const config = await configRes.json();
+                const files = await filesRes.json();
+                setRemoteSyncConfig(config);
+                setLocalFileCount(files.fileCount || 0);
+            } catch (err) {
+                console.error('Failed to fetch sync config:', err);
+            }
+        };
+        fetchSyncConfig();
+    }, [remoteSync.lastRun, folderImport.lastRun]);
 
     const runSync = async (
         _type: 'anpr' | 'monday' | 'cameras',
@@ -351,6 +385,163 @@ export function SettingsView() {
                             )}
                             {anprSync.lastRun && (
                                 <span className="ml-auto text-gray-400 dark:text-gray-500">Last: {anprSync.lastRun}</span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* ANPR Remote Sync Section */}
+                <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-6">
+                    <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-start gap-4">
+                            <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+                                <FolderSync className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-gray-900 dark:text-white">ANPR Remote Sync</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                    Sync ANPR detection files from remote server via rsync over SSH
+                                </p>
+                            </div>
+                        </div>
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${remoteSyncConfig?.enabled ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}>
+                            {remoteSyncConfig?.enabled ? 'Enabled' : 'Disabled'}
+                        </div>
+                    </div>
+
+                    {/* Config Display */}
+                    {remoteSyncConfig && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 text-sm">
+                            <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-slate-800/50 rounded-lg">
+                                <span className="text-gray-500 dark:text-gray-400">Remote Host:</span>
+                                <span className="font-mono text-gray-900 dark:text-white">{remoteSyncConfig.remoteUser}@{remoteSyncConfig.remoteHost}</span>
+                            </div>
+                            <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-slate-800/50 rounded-lg">
+                                <span className="text-gray-500 dark:text-gray-400">Remote Path:</span>
+                                <span className="font-mono text-gray-900 dark:text-white text-xs truncate max-w-[200px]" title={remoteSyncConfig.remotePath}>{remoteSyncConfig.remotePath}</span>
+                            </div>
+                            <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-slate-800/50 rounded-lg">
+                                <span className="text-gray-500 dark:text-gray-400">Local Path:</span>
+                                <span className="font-mono text-gray-900 dark:text-white text-xs truncate max-w-[200px]" title={remoteSyncConfig.localPath}>{remoteSyncConfig.localPath}</span>
+                            </div>
+                            <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-slate-800/50 rounded-lg">
+                                <span className="text-gray-500 dark:text-gray-400">Local Files:</span>
+                                <span className="font-mono text-gray-900 dark:text-white">{localFileCount.toLocaleString()} files</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                        <button
+                            onClick={async () => {
+                                setRemoteSync({ isRunning: true, message: 'Syncing from remote server...' });
+                                addLog('Starting remote sync (rsync over SSH)...', 'info');
+                                try {
+                                    const res = await fetch(`${API_BASE}/ingestion/anpr/sync`, { method: 'POST' });
+                                    const data = await res.json();
+                                    if (data.success) {
+                                        setRemoteSync({ isRunning: false, lastRun: new Date().toLocaleTimeString(), message: `Synced ${data.filesTransferred} files (${(data.bytesTransferred / 1024 / 1024).toFixed(1)} MB)` });
+                                        addLog(`Remote sync complete: ${data.filesTransferred} files transferred`, 'success');
+                                    } else {
+                                        setRemoteSync({ isRunning: false, lastRun: new Date().toLocaleTimeString(), error: data.error || 'Sync failed' });
+                                        addLog(data.error || 'Remote sync failed', 'error');
+                                    }
+                                } catch (err) {
+                                    const msg = err instanceof Error ? err.message : 'Network error';
+                                    setRemoteSync({ isRunning: false, error: msg });
+                                    addLog(msg, 'error');
+                                }
+                            }}
+                            disabled={remoteSync.isRunning || !remoteSyncConfig?.enabled}
+                            className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                        >
+                            {remoteSync.isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                            {remoteSync.isRunning ? 'Syncing...' : 'Sync from Remote'}
+                        </button>
+
+                        <button
+                            onClick={async () => {
+                                setFolderImport({ isRunning: true, message: 'Importing local files to database...' });
+                                addLog('Starting folder import...', 'info');
+                                try {
+                                    const res = await fetch(`${API_BASE}/ingestion/anpr/import`, { method: 'POST' });
+                                    const data = await res.json();
+                                    setFolderImport({ isRunning: false, lastRun: new Date().toLocaleTimeString(), message: `Imported ${data.success} of ${data.processed} files` });
+                                    addLog(`Import complete: ${data.success} imported, ${data.skipped} skipped, ${data.errors} errors`, data.errors > 0 ? 'error' : 'success');
+                                } catch (err) {
+                                    const msg = err instanceof Error ? err.message : 'Network error';
+                                    setFolderImport({ isRunning: false, error: msg });
+                                    addLog(msg, 'error');
+                                }
+                            }}
+                            disabled={folderImport.isRunning || localFileCount === 0}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                        >
+                            {folderImport.isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                            {folderImport.isRunning ? 'Importing...' : 'Import to Database'}
+                        </button>
+
+                        <button
+                            onClick={async () => {
+                                setRemoteSync({ isRunning: true, message: 'Running sync and import...' });
+                                addLog('Starting combined sync + import...', 'info');
+                                try {
+                                    const res = await fetch(`${API_BASE}/ingestion/anpr/sync-and-import?deleteAfterImport=true`, { method: 'POST' });
+                                    const data = await res.json();
+                                    if (data.sync.success) {
+                                        const importMsg = data.import ? `${data.import.success} imported` : 'import pending';
+                                        setRemoteSync({ isRunning: false, lastRun: new Date().toLocaleTimeString(), message: `Synced ${data.sync.filesTransferred} files, ${importMsg}` });
+                                        addLog(`Sync + import complete: ${data.sync.filesTransferred} synced, ${importMsg}`, 'success');
+                                    } else {
+                                        setRemoteSync({ isRunning: false, error: data.sync.error || 'Sync failed' });
+                                        addLog(data.sync.error || 'Combined sync failed', 'error');
+                                    }
+                                } catch (err) {
+                                    const msg = err instanceof Error ? err.message : 'Network error';
+                                    setRemoteSync({ isRunning: false, error: msg });
+                                    addLog(msg, 'error');
+                                }
+                            }}
+                            disabled={remoteSync.isRunning || !remoteSyncConfig?.enabled}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                        >
+                            {remoteSync.isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                            Sync & Import
+                        </button>
+                    </div>
+
+                    {/* Status */}
+                    <div className="pt-4 border-t border-gray-100 dark:border-slate-800">
+                        <div className="flex items-center gap-2 text-sm">
+                            {remoteSync.isRunning ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 text-purple-500 animate-spin" />
+                                    <span className="text-purple-600 dark:text-purple-400">{remoteSync.message || 'Processing...'}</span>
+                                </>
+                            ) : remoteSync.error ? (
+                                <>
+                                    <XCircle className="w-4 h-4 text-red-500" />
+                                    <span className="text-red-600 dark:text-red-400">{remoteSync.error}</span>
+                                </>
+                            ) : remoteSync.message ? (
+                                <>
+                                    <CheckCircle className="w-4 h-4 text-green-500" />
+                                    <span className="text-green-600 dark:text-green-400">{remoteSync.message}</span>
+                                </>
+                            ) : !remoteSyncConfig?.enabled ? (
+                                <>
+                                    <Clock className="w-4 h-4 text-amber-500" />
+                                    <span className="text-amber-600 dark:text-amber-400">Remote sync disabled. Configure in .env file.</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                                    <span className="text-gray-500 dark:text-gray-400">Ready to sync</span>
+                                </>
+                            )}
+                            {remoteSync.lastRun && (
+                                <span className="ml-auto text-gray-400 dark:text-gray-500">Last: {remoteSync.lastRun}</span>
                             )}
                         </div>
                     </div>

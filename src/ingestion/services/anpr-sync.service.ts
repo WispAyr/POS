@@ -236,7 +236,12 @@ export class AnprSyncService implements OnModuleInit {
     return new Promise<string>((resolve, reject) => {
       const sshpassArgs = ['-p', this.config.password!, 'rsync', ...rsyncArgs];
 
-      const proc = spawn('sshpass', sshpassArgs, {
+      // Use full path for sshpass on macOS (Homebrew)
+      const sshpassPath = process.platform === 'darwin'
+        ? '/opt/homebrew/bin/sshpass'
+        : 'sshpass';
+
+      const proc = spawn(sshpassPath, sshpassArgs, {
         env: { ...process.env },
       });
 

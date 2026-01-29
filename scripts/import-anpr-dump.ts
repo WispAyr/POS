@@ -9,7 +9,7 @@ async function importAnprDump() {
   const app = await NestFactory.createApplicationContext(AppModule);
   const anprService = app.get(AnprIngestionService);
 
-  const dumpDir = '/Users/ewanrichardson/Downloads/anpr-results';
+  const dumpDir = process.env.ANPR_DUMP_DIR || '/Users/noc/operations/anpr-dumps';
   const files = fs.readdirSync(dumpDir).filter((f) => f.endsWith('.json'));
 
   console.log(`Found ${files.length} JSON files to import`);
@@ -82,7 +82,7 @@ async function importAnprDump() {
               try {
                 const plateFilename = `${eventId}-plate.jpg`;
                 const platePath = path.join(
-                  '/Users/ewanrichardson/Development/POS/uploads/images',
+                  '/Users/noc/operations/POS/uploads/images',
                   plateFilename,
                 );
                 const plateBuffer = Buffer.from(decode.plate, 'base64');
@@ -101,7 +101,7 @@ async function importAnprDump() {
               try {
                 const overviewFilename = `${eventId}-overview.jpg`;
                 const overviewPath = path.join(
-                  '/Users/ewanrichardson/Development/POS/uploads/images',
+                  '/Users/noc/operations/POS/uploads/images',
                   overviewFilename,
                 );
                 const overviewBuffer = Buffer.from(decode.overview, 'base64');
@@ -125,7 +125,7 @@ async function importAnprDump() {
                 if (img.ImageType === 'platePatch' && img.BinaryImage) {
                   const plateFilename = `${eventId}-plate.jpg`;
                   const platePath = path.join(
-                    '/Users/ewanrichardson/Development/POS/uploads/images',
+                    '/Users/noc/operations/POS/uploads/images',
                     plateFilename,
                   );
                   const plateBuffer = Buffer.from(img.BinaryImage, 'base64');
@@ -137,7 +137,7 @@ async function importAnprDump() {
                 } else if (img.ImageType === 'overviewImage' && img.BinaryImage) {
                   const overviewFilename = `${eventId}-overview.jpg`;
                   const overviewPath = path.join(
-                    '/Users/ewanrichardson/Development/POS/uploads/images',
+                    '/Users/noc/operations/POS/uploads/images',
                     overviewFilename,
                   );
                   const overviewBuffer = Buffer.from(img.BinaryImage, 'base64');

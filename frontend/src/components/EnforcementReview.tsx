@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Check, X, AlertTriangle, Clock, MapPin, Car, SkipForward, FileText, History, Tag, ChevronLeft, ChevronRight, Filter, Calendar, Building2 } from 'lucide-react';
+import { Check, X, Clock, MapPin, Car, SkipForward, FileText, History, Tag, ChevronLeft, ChevronRight, Filter, Calendar, Building2 } from 'lucide-react';
 
 interface Decision {
     id: string;
@@ -69,9 +69,6 @@ export function EnforcementReview() {
 
     // Notes
     const [decisionNote, setDecisionNote] = useState('');
-    const [newVehicleNote, setNewVehicleNote] = useState('');
-    const [newMarkerType, setNewMarkerType] = useState('');
-    const [newMarkerDesc, setNewMarkerDesc] = useState('');
 
     // Fetch sites
     const fetchSites = async () => {
@@ -190,35 +187,6 @@ export function EnforcementReview() {
         const currentIndex = queue.findIndex(d => d.id === currentDecision.id);
         const nextDecision = queue[currentIndex + 1] || queue[0];
         setCurrentDecision(nextDecision);
-    };
-
-    const handleAddVehicleNote = async () => {
-        if (!currentDecision || !newVehicleNote.trim()) return;
-        try {
-            await axios.post(`/enforcement/vehicle/${currentDecision.vrm}/notes`, {
-                note: newVehicleNote,
-                createdBy: 'operator-1',
-            });
-            setNewVehicleNote('');
-            fetchVehicleData(currentDecision.vrm);
-        } catch (error) {
-            console.error('Failed to add note', error);
-        }
-    };
-
-    const handleAddMarker = async () => {
-        if (!currentDecision || !newMarkerType.trim()) return;
-        try {
-            await axios.post(`/enforcement/vehicle/${currentDecision.vrm}/markers`, {
-                markerType: newMarkerType,
-                description: newMarkerDesc,
-            });
-            setNewMarkerType('');
-            setNewMarkerDesc('');
-            fetchVehicleData(currentDecision.vrm);
-        } catch (error) {
-            console.error('Failed to add marker', error);
-        }
     };
 
     const toggleSite = (siteId: string) => {

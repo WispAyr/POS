@@ -7,8 +7,8 @@ export class MondayController {
 
   @Post('sync')
   async triggerSync() {
-    await this.mondayService.syncAll();
-    return { message: 'Full sync triggered successfully' };
+    const result = await this.mondayService.syncAll();
+    return result;
   }
 
   @Post('permits/sync')

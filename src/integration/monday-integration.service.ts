@@ -29,12 +29,48 @@ export class MondayIntegrationService {
     this.apiKey = this.configService.get<string>('MONDAY_API_KEY') || '';
   }
 
-  @Cron(CronExpression.EVERY_10_MINUTES)
   async syncAll() {
+    this.logger.log('Starting Monday.com sync...');
+    return await this.syncAllWithResult();
+  }
+
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async scheduledSync() {
     this.logger.log('Starting Monday.com sync (scheduled)...');
-    await this.syncSites();
-    await this.syncWhitelists();
+    await this.syncAllWithResult();
     this.logger.log('Monday.com sync completed.');
+  }
+
+  private async syncAllWithResult() {
+    if (!this.apiKey || this.apiKey === 'your_api_key_here' || this.apiKey.trim() === '') {
+      const error = 'MONDAY_API_KEY is not configured. Please set a valid API key in .env file.';
+      this.logger.error(error);
+      return {
+        success: false,
+        message: error,
+        sitesSynced: 0,
+        permitsSynced: 0,
+      };
+    }
+
+    try {
+      await this.syncSites();
+      const permitsCount = await this.syncWhitelists();
+      return {
+        success: true,
+        message: 'Full sync completed successfully',
+        sitesSynced: 1, // Could be enhanced to return actual count
+        permitsSynced: permitsCount,
+      };
+    } catch (error) {
+      this.logger.error('Monday.com sync failed', error);
+      return {
+        success: false,
+        message: `Sync failed: ${error instanceof Error ? error.message : String(error)}`,
+        sitesSynced: 0,
+        permitsSynced: 0,
+      };
+    }
   }
 
   private async fetchBoardItems(boardId: number): Promise<MondayItem[] | null> {

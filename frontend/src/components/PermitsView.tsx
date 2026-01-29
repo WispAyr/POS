@@ -72,7 +72,7 @@ const PermitRow = ({ permit, onDelete, sites }: { permit: Permit; onDelete: (id:
         </td>
     </tr>
 );
-const API_BASE = 'http://localhost:3000';
+const API_BASE = '';
 
 export function PermitsView() {
     const [permits, setPermits] = useState<Permit[]>([]);
@@ -80,10 +80,10 @@ export function PermitsView() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
-    const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+    const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-    const toggleCollapse = (siteId: string) => {
-        setCollapsed(prev => ({ ...prev, [siteId]: !prev[siteId] }));
+    const toggleExpand = (siteId: string) => {
+        setExpanded(prev => ({ ...prev, [siteId]: !prev[siteId] }));
     };
 
     // Form state
@@ -222,12 +222,12 @@ export function PermitsView() {
                 }).map(sitePermits => {
                     const siteId = sitePermits[0].siteId!;
                     const siteName = sites.find(s => s.id === siteId)?.name || siteId;
-                    const isCollapsed = collapsed[siteId];
+                    const isExpanded = expanded[siteId];
 
                     return (
                         <div key={siteId} className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
                             <button
-                                onClick={() => toggleCollapse(siteId)}
+                                onClick={() => toggleExpand(siteId)}
                                 className="w-full bg-gray-50 dark:bg-slate-800/50 px-6 py-3 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
                             >
                                 <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -238,11 +238,11 @@ export function PermitsView() {
                                     <span className="text-xs bg-white dark:bg-slate-900 px-2 py-1 rounded border border-gray-200 dark:border-slate-700 text-gray-500">
                                         {sitePermits.length}
                                     </span>
-                                    {isCollapsed ? <ChevronRight className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                                    {isExpanded ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
                                 </div>
                             </button>
 
-                            {!isCollapsed && (
+                            {isExpanded && (
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left">
                                         <PermitTableHeader />
