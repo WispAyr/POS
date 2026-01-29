@@ -61,6 +61,13 @@ export class PlateReviewService {
       return existingReview;
     }
 
+    // Convert images to the format expected by PlateReview (timestamp as string)
+    const reviewImages = movement.images?.map(img => ({
+      url: img.url,
+      type: img.type,
+      timestamp: img.timestamp?.toISOString(),
+    }));
+
     const review = this.plateReviewRepository.create({
       movementId: movement.id,
       originalVrm: movement.rawData?.vrm || movement.rawData?.plateNumber || movement.vrm,
@@ -71,7 +78,7 @@ export class PlateReviewService {
       suspicionReasons,
       validationStatus,
       reviewStatus: ReviewStatus.PENDING,
-      images: movement.images,
+      images: reviewImages,
       metadata: {
         cameraIds: movement.cameraIds,
         direction: movement.direction,
@@ -98,7 +105,7 @@ export class PlateReviewService {
       siteId: movement.siteId,
       vrm: movement.vrm,
       relatedEntities: [
-        { entityType: 'MOVEMENT', entityId: movement.id },
+        { entityType: 'MOVEMENT', entityId: movement.id, relationship: 'SOURCE' },
       ],
     });
 
@@ -192,7 +199,7 @@ export class PlateReviewService {
     review.reviewStatus = ReviewStatus.APPROVED;
     review.reviewedBy = userId;
     review.reviewedAt = new Date();
-    review.reviewNotes = notes;
+    review.reviewNotes = notes ?? '';
 
     const updatedReview = await this.plateReviewRepository.save(review);
 
@@ -211,7 +218,7 @@ export class PlateReviewService {
       siteId: review.siteId,
       vrm: review.normalizedVrm,
       relatedEntities: [
-        { entityType: 'MOVEMENT', entityId: review.movementId },
+        { entityType: 'MOVEMENT', entityId: review.movementId, relationship: 'SOURCE' },
       ],
     });
 
@@ -249,7 +256,7 @@ export class PlateReviewService {
     review.correctedVrm = normalizedCorrectedVrm;
     review.reviewedBy = userId;
     review.reviewedAt = new Date();
-    review.reviewNotes = notes;
+    review.reviewNotes = notes ?? '';
 
     const updatedReview = await this.plateReviewRepository.save(review);
 
@@ -270,7 +277,7 @@ export class PlateReviewService {
       siteId: review.siteId,
       vrm: normalizedCorrectedVrm,
       relatedEntities: [
-        { entityType: 'MOVEMENT', entityId: review.movementId },
+        { entityType: 'MOVEMENT', entityId: review.movementId, relationship: 'SOURCE' },
       ],
     });
 
@@ -323,7 +330,7 @@ export class PlateReviewService {
       siteId: review.siteId,
       vrm: review.normalizedVrm,
       relatedEntities: [
-        { entityType: 'MOVEMENT', entityId: review.movementId },
+        { entityType: 'MOVEMENT', entityId: review.movementId, relationship: 'SOURCE' },
       ],
     });
 
