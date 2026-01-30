@@ -75,6 +75,61 @@ export class LiveOpsController {
   }
 
   /**
+   * Get camera stream URLs (RTSP + go2rtc WebRTC/HLS)
+   */
+  @Get('sites/:siteId/cameras/:cameraId/stream')
+  async getCameraStream(
+    @Param('siteId') siteId: string,
+    @Param('cameraId') cameraId: string,
+  ) {
+    const site = await this.liveOpsService.getSiteWithLiveOps(siteId);
+    const liveOps = site.config?.liveOps;
+    
+    const camera = liveOps?.cameras?.find(
+      (c) => c.id === cameraId || c.protectId === cameraId,
+    );
+
+    if (!camera) {
+      return { success: false, error: 'Camera not found' };
+    }
+
+    const urls = await this.liveOpsService.getCameraStreamUrl(camera.protectId);
+    return {
+      success: true,
+      camera: camera.name,
+      protectId: camera.protectId,
+      ...urls,
+    };
+  }
+
+  /**
+   * Get all camera streams for a site (for live video view)
+   */
+  @Get('sites/:siteId/streams')
+  async getSiteStreams(@Param('siteId') siteId: string) {
+    const site = await this.liveOpsService.getSiteWithLiveOps(siteId);
+    const liveOps = site.config?.liveOps;
+
+    if (!liveOps?.cameras) {
+      return { success: true, streams: [] };
+    }
+
+    const streams = await Promise.all(
+      liveOps.cameras.map(async (camera) => {
+        const urls = await this.liveOpsService.getCameraStreamUrl(camera.protectId);
+        return {
+          id: camera.id,
+          name: camera.name,
+          protectId: camera.protectId,
+          ...urls,
+        };
+      })
+    );
+
+    return { success: true, streams };
+  }
+
+  /**
    * Trigger barrier control (Radisson-specific, stub for now)
    */
   @Post('sites/:siteId/barrier/:action')

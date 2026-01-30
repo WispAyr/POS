@@ -140,73 +140,101 @@ export class LiveOpsService {
   }
 
   /**
-   * Fetch snapshot from UniFi Protect NVR
+   * Fetch snapshot from UniFi Protect NVR using curl (more reliable)
    */
   private async fetchProtectSnapshot(
     cameraId: string,
   ): Promise<CameraSnapshotResult> {
-    return new Promise((resolve) => {
-      // First, we need to authenticate
-      const authOptions = {
-        hostname: this.nvrHost,
-        port: 443,
-        path: '/api/auth/login',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        rejectUnauthorized: false,
+    try {
+      const fs = await import('fs');
+      const cookieFile = '/tmp/protect-cookies.txt';
+      const snapshotFile = `/tmp/snapshot-${cameraId}-${Date.now()}.jpg`;
+
+      // Step 1: Authenticate and get cookies
+      const authCmd = `curl -sk -X POST "https://${this.nvrHost}/api/auth/login" ` +
+        `-H "Content-Type: application/json" ` +
+        `-d '{"username":"${this.nvrUsername}","password":"${this.nvrPassword}"}' ` +
+        `-c ${cookieFile} -D /tmp/protect-headers.txt`;
+      
+      await execAsync(authCmd);
+
+      // Step 2: Extract CSRF token
+      const headers = fs.readFileSync('/tmp/protect-headers.txt', 'utf8');
+      const csrfMatch = headers.match(/x-csrf-token:\s*([^\r\n]+)/i);
+      const csrf = csrfMatch ? csrfMatch[1].trim() : '';
+
+      // Step 3: Fetch snapshot
+      const snapshotCmd = `curl -sk "https://${this.nvrHost}/proxy/protect/api/cameras/${cameraId}/snapshot?ts=${Date.now()}" ` +
+        `-H "X-CSRF-Token: ${csrf}" ` +
+        `-b ${cookieFile} ` +
+        `-o ${snapshotFile}`;
+      
+      await execAsync(snapshotCmd);
+
+      // Read snapshot file
+      const data = fs.readFileSync(snapshotFile);
+      
+      // Cleanup
+      try { fs.unlinkSync(snapshotFile); } catch {}
+
+      return {
+        success: true,
+        contentType: 'image/jpeg',
+        data,
       };
+    } catch (error) {
+      this.logger.error(`Snapshot fetch failed: ${error.message}`);
+      return { success: false, contentType: '', error: error.message };
+    }
+  }
 
-      const authReq = https.request(authOptions, (authRes) => {
-        let cookies = authRes.headers['set-cookie'] || [];
-        const csrfToken = authRes.headers['x-csrf-token'] as string;
+  // go2rtc configuration - provides WebRTC/HLS/MSE streaming from RTSP sources
+  // go2rtc runs via pm2 on port 1984
+  private readonly go2rtcHost = 'localhost:1984';
+  
+  // Map UniFi Protect camera IDs to go2rtc stream names
+  // NOTE: RTSP must be enabled for each camera in UniFi Protect UI
+  // Currently only 'ramp' has RTSP enabled - others fall back to snapshots
+  private readonly cameraStreamNames: Record<string, string> = {
+    // '692dd5480096ea03e4000423': 'kyle-rise-front',  // Needs RTSP enabled in Protect
+    // '692dd54800e1ea03e4000424': 'kyle-rise-rear',   // Needs RTSP enabled in Protect
+    '692dd5480117ea03e4000426': 'kyle-rise-ramp',     // RTSP enabled, alias: Drl4uzQfqf2X8dfz
+  };
 
-        // Now fetch the snapshot
-        const snapshotOptions = {
-          hostname: this.nvrHost,
-          port: 443,
-          path: `/proxy/protect/api/cameras/${cameraId}/snapshot?ts=${Date.now()}`,
-          method: 'GET',
-          headers: {
-            Cookie: cookies.map((c) => c.split(';')[0]).join('; '),
-            'X-CSRF-Token': csrfToken || '',
-          },
-          rejectUnauthorized: false,
-        };
+  /**
+   * Get stream URLs for a camera (RTSP + go2rtc WebRTC/HLS)
+   */
+  async getCameraStreamUrl(cameraId: string): Promise<{
+    rtsp: string;
+    rtsps: string;
+    webrtc?: string;
+    hls?: string;
+    mse?: string;
+    go2rtc?: string;
+  }> {
+    const streamName = this.cameraStreamNames[cameraId];
+    
+    const result: {
+      rtsp: string;
+      rtsps: string;
+      webrtc?: string;
+      hls?: string;
+      mse?: string;
+      go2rtc?: string;
+    } = {
+      rtsp: `rtsp://${this.nvrHost}:7447/${cameraId}`,
+      rtsps: `rtsps://${this.nvrHost}:7441/${cameraId}?enableSrtp`,
+    };
 
-        const snapshotReq = https.request(snapshotOptions, (snapshotRes) => {
-          const chunks: Buffer[] = [];
-          snapshotRes.on('data', (chunk) => chunks.push(chunk));
-          snapshotRes.on('end', () => {
-            const data = Buffer.concat(chunks);
-            resolve({
-              success: true,
-              contentType: snapshotRes.headers['content-type'] || 'image/jpeg',
-              data,
-            });
-          });
-        });
+    // If we have a go2rtc stream configured for this camera, add those URLs
+    if (streamName) {
+      result.webrtc = `http://${this.go2rtcHost}/api/webrtc?src=${streamName}`;
+      result.hls = `http://${this.go2rtcHost}/api/stream.m3u8?src=${streamName}`;
+      result.mse = `http://${this.go2rtcHost}/api/stream.mp4?src=${streamName}`;
+      result.go2rtc = `http://${this.go2rtcHost}/stream.html?src=${streamName}`;
+    }
 
-        snapshotReq.on('error', (error) => {
-          resolve({ success: false, contentType: '', error: error.message });
-        });
-
-        snapshotReq.end();
-      });
-
-      authReq.on('error', (error) => {
-        resolve({ success: false, contentType: '', error: error.message });
-      });
-
-      authReq.write(
-        JSON.stringify({
-          username: this.nvrUsername,
-          password: this.nvrPassword,
-        }),
-      );
-      authReq.end();
-    });
+    return result;
   }
 
   /**
