@@ -1,9 +1,13 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { EnforcementService } from './services/enforcement.service';
+import { EnforcementReevaluationService } from '../engine/services/enforcement-reevaluation.service';
 
 @Controller('enforcement')
 export class EnforcementController {
-  constructor(private readonly enforcementService: EnforcementService) {}
+  constructor(
+    private readonly enforcementService: EnforcementService,
+    private readonly reevaluationService: EnforcementReevaluationService,
+  ) {}
 
   @Get('queue')
   async getQueue(
@@ -155,5 +159,23 @@ export class EnforcementController {
   @Get('vehicle/:vrm/details')
   async getVehicleDetails(@Param('vrm') vrm: string) {
     return this.enforcementService.getVehicleDetails(vrm);
+  }
+
+  /**
+   * Trigger manual re-evaluation of all enforcement candidates.
+   * Only NEW and CANDIDATE statuses are affected - human-reviewed decisions are protected.
+   */
+  @Post('reevaluate')
+  async triggerReevaluation() {
+    return this.reevaluationService.triggerReevaluation();
+  }
+
+  /**
+   * Re-evaluate a specific decision.
+   * Only works for NEW and CANDIDATE statuses - human-reviewed decisions require manual intervention.
+   */
+  @Post('reevaluate/:id')
+  async reevaluateDecision(@Param('id') id: string) {
+    return this.reevaluationService.reevaluateDecision(id);
   }
 }
