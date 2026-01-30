@@ -54,6 +54,8 @@ export class PaymentProvider {
     emailsProcessed?: number;
     recordsFound?: number;
     recordsIngested?: number;
+    recordsSkipped?: number;
+    recordsFailed?: number;
     errors?: string[];
     duration?: number;
   };

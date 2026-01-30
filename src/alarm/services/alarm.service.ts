@@ -14,6 +14,8 @@ import {
 } from '../../domain/entities/alarm.enums';
 import { CreateAlarmDefinitionDto } from '../dto/create-alarm-definition.dto';
 import { UpdateAlarmDefinitionDto } from '../dto/update-alarm-definition.dto';
+import { AlarmActionService } from './alarm-action.service';
+import type { AlarmActionDto } from '../dto/alarm-action.dto';
 
 @Injectable()
 export class AlarmService {
@@ -26,6 +28,7 @@ export class AlarmService {
     private readonly alarmRepo: Repository<Alarm>,
     @InjectRepository(AlarmNotification)
     private readonly notificationRepo: Repository<AlarmNotification>,
+    private readonly actionService: AlarmActionService,
   ) {}
 
   // Definition CRUD
@@ -144,6 +147,38 @@ export class AlarmService {
 
     // Create notifications
     await this.createNotifications(saved, definition.notificationChannels);
+
+    // Execute actions if defined
+    if (definition.actions?.length) {
+      try {
+        const actionResults = await this.actionService.executeActions(
+          saved,
+          definition.actions as AlarmActionDto[],
+          { site: { id: siteId || definition.siteId } },
+        );
+        
+        // Log action results
+        const successful = actionResults.filter(r => r.success).length;
+        const failed = actionResults.filter(r => !r.success).length;
+        
+        if (failed > 0) {
+          this.logger.warn(
+            `Alarm ${saved.id}: ${successful} actions succeeded, ${failed} failed`,
+          );
+        } else {
+          this.logger.log(`Alarm ${saved.id}: All ${successful} actions executed`);
+        }
+        
+        // Store action results in alarm details
+        saved.details = {
+          ...saved.details,
+          actionResults,
+        };
+        await this.alarmRepo.save(saved);
+      } catch (err: any) {
+        this.logger.error(`Failed to execute alarm actions: ${err.message}`);
+      }
+    }
 
     return saved;
   }

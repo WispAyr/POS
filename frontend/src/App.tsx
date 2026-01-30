@@ -21,6 +21,7 @@ import { OperationsDashboard } from './components/dashboard';
 import { ScheduledNotificationDashboard } from './components/notifications/ScheduledNotificationDashboard';
 import { CarParkLiveView } from './components/car-park-live';
 import { Sidebar, MobileNav, FullscreenButton } from './components/layout';
+import { HailoDevBar } from './components/HailoDevBar';
 import { Sun, Moon, Search } from 'lucide-react';
 
 // View titles for the header
@@ -114,6 +115,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex transition-colors duration-200">
+      {/* Developer Status Bar */}
+      <HailoDevBar />
+      
       {/* Mobile Navigation */}
       <MobileNav currentView={currentView} onNavigate={handleNavigate} />
 

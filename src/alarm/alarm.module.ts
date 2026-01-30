@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
+import { HttpModule } from '@nestjs/axios';
 import {
   AlarmDefinition,
   Alarm,
@@ -13,6 +14,7 @@ import { AlarmService } from './services/alarm.service';
 import { AlarmCheckerService } from './services/alarm-checker.service';
 import { AlarmSchedulerService } from './services/alarm-scheduler.service';
 import { AlarmNotificationService } from './services/alarm-notification.service';
+import { AlarmActionService } from './services/alarm-action.service';
 import { AlarmController } from './alarm.controller';
 
 @Module({
@@ -26,6 +28,7 @@ import { AlarmController } from './alarm.controller';
       Decision,
     ]),
     ScheduleModule.forRoot(),
+    HttpModule.register({ timeout: 30000 }),
   ],
   controllers: [AlarmController],
   providers: [
@@ -33,7 +36,8 @@ import { AlarmController } from './alarm.controller';
     AlarmCheckerService,
     AlarmSchedulerService,
     AlarmNotificationService,
+    AlarmActionService,
   ],
-  exports: [AlarmService, AlarmCheckerService],
+  exports: [AlarmService, AlarmCheckerService, AlarmActionService],
 })
 export class AlarmModule {}

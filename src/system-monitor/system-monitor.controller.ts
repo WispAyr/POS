@@ -1,6 +1,6 @@
 import { Controller, Get, Put, Body, UseGuards } from '@nestjs/common';
 import { SystemMonitorService } from './services/system-monitor.service';
-import {
+import type {
   SystemMetrics,
   SystemHealthStatus,
   SystemMonitorConfig,

@@ -8,9 +8,9 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { LiveOpsService } from './live-ops.service';
-import { AnnounceRequestDto } from './live-ops.types';
+import type { AnnounceRequestDto } from './live-ops.types';
 
 @Controller('api/live-ops')
 export class LiveOpsController {

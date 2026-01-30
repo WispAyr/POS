@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SystemMonitorService } from './system-monitor.service';
 import { AlarmService } from '../../alarm/services/alarm.service';
-import { AlarmType, AlarmSeverity } from '../../domain/entities/alarm.enums';
+import { AlarmType, AlarmSeverity, NotificationChannel } from '../../domain/entities/alarm.enums';
 
 @Injectable()
 export class SystemMonitorSchedulerService implements OnModuleInit {
@@ -69,9 +69,9 @@ export class SystemMonitorSchedulerService implements OnModuleInit {
   ): Promise<void> {
     try {
       // Find or create alarm definition for this check
-      const definitions = await this.alarmService.getDefinitions();
+      const definitions = await this.alarmService.getAllDefinitions();
       let definition = definitions.find(
-        (d) =>
+        (d: any) =>
           d.type === AlarmType.CUSTOM &&
           d.name === `System: ${checkName}`,
       );
@@ -85,7 +85,7 @@ export class SystemMonitorSchedulerService implements OnModuleInit {
           severity,
           conditions: { checkName },
           enabled: true,
-          notificationChannels: ['IN_APP'],
+          notificationChannels: [NotificationChannel.IN_APP],
         });
       }
 
@@ -97,12 +97,9 @@ export class SystemMonitorSchedulerService implements OnModuleInit {
 
       if (!existingAlarm) {
         // Trigger new alarm
-        await this.alarmService.triggerAlarm(definition.id, {
-          message,
-          details: {
-            checkName,
-            timestamp: new Date().toISOString(),
-          },
+        await this.alarmService.triggerAlarm(definition, message, {
+          checkName,
+          timestamp: new Date().toISOString(),
         });
         this.logger.warn(`System alarm triggered: ${checkName} - ${message}`);
       }

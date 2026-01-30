@@ -3,7 +3,10 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Session } from './session.entity';
 
 export enum DecisionOutcome {
   COMPLIANT = 'COMPLIANT',
@@ -22,6 +25,10 @@ export class Decision {
 
   @Column({ type: 'uuid', nullable: true })
   sessionId: string | null;
+
+  @ManyToOne(() => Session, { nullable: true })
+  @JoinColumn({ name: 'sessionId' })
+  session?: Session;
 
   @Column({ type: 'uuid', nullable: true })
   movementId: string | null;

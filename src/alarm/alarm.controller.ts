@@ -12,9 +12,11 @@ import {
 } from '@nestjs/common';
 import { AlarmService } from './services/alarm.service';
 import { AlarmSchedulerService } from './services/alarm-scheduler.service';
+import { AlarmActionService } from './services/alarm-action.service';
 import { CreateAlarmDefinitionDto } from './dto/create-alarm-definition.dto';
 import { UpdateAlarmDefinitionDto } from './dto/update-alarm-definition.dto';
 import { AcknowledgeAlarmDto, ResolveAlarmDto } from './dto/acknowledge-alarm.dto';
+import { AlarmActionDto } from './dto/alarm-action.dto';
 import { AlarmStatus, AlarmSeverity } from '../domain/entities/alarm.enums';
 
 @Controller('api/alarms')
@@ -22,6 +24,7 @@ export class AlarmController {
   constructor(
     private readonly alarmService: AlarmService,
     private readonly schedulerService: AlarmSchedulerService,
+    private readonly actionService: AlarmActionService,
   ) {}
 
   // Alarm Definitions
@@ -162,5 +165,54 @@ export class AlarmController {
     return {
       scheduledChecks: this.schedulerService.getScheduledChecks(),
     };
+  }
+
+  // Action Types
+  @Get('actions/types')
+  getActionTypes() {
+    return {
+      types: [
+        {
+          type: 'TELEGRAM',
+          label: 'Telegram Notification',
+          description: 'Send a message to a Telegram chat',
+          configSchema: {
+            chatId: { type: 'string', label: 'Chat ID', required: false, description: 'Leave empty for default' },
+            message: { type: 'text', label: 'Message Template', required: false, description: 'Use {{alarm.message}}, {{alarm.severity}}' },
+            includeDetails: { type: 'boolean', label: 'Include Details', default: true },
+          },
+        },
+        {
+          type: 'WEBHOOK',
+          label: 'Webhook Call',
+          description: 'Make an HTTP request to an external service',
+          configSchema: {
+            url: { type: 'string', label: 'URL', required: true },
+            method: { type: 'select', label: 'Method', options: ['GET', 'POST', 'PUT'], default: 'POST' },
+            headers: { type: 'json', label: 'Headers', required: false },
+            body: { type: 'json', label: 'Body Template', required: false },
+            timeout: { type: 'number', label: 'Timeout (ms)', default: 30000 },
+          },
+        },
+        {
+          type: 'ANNOUNCEMENT',
+          label: 'Audio Announcement',
+          description: 'Play a TTS announcement via AI Horn',
+          configSchema: {
+            target: { type: 'select', label: 'Target', options: ['horn', 'cameras', 'all'], default: 'horn' },
+            message: { type: 'text', label: 'Message', required: true },
+            volume: { type: 'number', label: 'Volume (%)', default: 50, min: 0, max: 100 },
+          },
+        },
+      ],
+    };
+  }
+
+  // Test Action
+  @Post('actions/test')
+  @HttpCode(HttpStatus.OK)
+  async testAction(@Body() action: AlarmActionDto) {
+    const result = await this.actionService.testAction(action);
+    return result;
   }
 }

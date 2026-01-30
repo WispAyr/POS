@@ -89,6 +89,7 @@ export interface SiteMappingConfig {
   emailSiteIdentifier?: string;
   apiSiteCode?: string;
   webhookSiteId?: string;
+  tap2parkIds?: string[];
 }
 
 export interface AttachmentInfo {

@@ -9,11 +9,13 @@ import {
   PaymentIngestionLog,
 } from '../domain/entities';
 import { AuditModule } from '../audit/audit.module';
+import { EngineModule } from '../engine/engine.module';
 import { PaymentProviderService } from './services/payment-provider.service';
 import { EmailPaymentPollerService } from './services/email-payment-poller.service';
 import { EmailPaymentParserService } from './services/email-payment-parser.service';
 import { PaymentProviderIngestionService } from './services/payment-provider-ingestion.service';
 import { PaymentProviderMondayService } from './services/payment-provider-monday.service';
+import { Tap2ParkApiPollerService } from './services/tap2park-api-poller.service';
 import { PaymentProviderController } from './payment-provider.controller';
 import { PaymentWebhookController } from './payment-webhook.controller';
 
@@ -28,6 +30,7 @@ import { PaymentWebhookController } from './payment-webhook.controller';
     HttpModule,
     ScheduleModule.forRoot(),
     forwardRef(() => AuditModule),
+    forwardRef(() => EngineModule),
   ],
   controllers: [PaymentProviderController, PaymentWebhookController],
   providers: [
@@ -36,10 +39,12 @@ import { PaymentWebhookController } from './payment-webhook.controller';
     EmailPaymentParserService,
     PaymentProviderIngestionService,
     PaymentProviderMondayService,
+    Tap2ParkApiPollerService,
   ],
   exports: [
     PaymentProviderService,
     PaymentProviderIngestionService,
+    Tap2ParkApiPollerService,
   ],
 })
 export class PaymentProviderModule {}

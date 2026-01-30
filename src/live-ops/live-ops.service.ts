@@ -249,6 +249,7 @@ export class LiveOpsService {
     site.config = {
       ...site.config,
       liveOps: {
+        enabled: site.config?.liveOps?.enabled ?? false,
         ...site.config?.liveOps,
         ...liveOps,
       },

@@ -55,6 +55,15 @@ export class AlarmDefinition {
   @Column({ type: 'simple-array', default: 'IN_APP' })
   notificationChannels: NotificationChannel[];
 
+  @Column({ type: 'jsonb', nullable: true })
+  actions: {
+    name: string;
+    type: string;
+    config: Record<string, any>;
+    enabled: boolean;
+    description?: string;
+  }[];
+
   @CreateDateColumn()
   createdAt: Date;
 
