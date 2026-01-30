@@ -17,27 +17,31 @@ import { PaymentProviderConfig } from './components/PaymentProviderConfig';
 import { CustomerExportDashboard } from './components/CustomerExportDashboard';
 import { VrmSearch } from './components/VrmSearch';
 import { SystemMonitorView } from './components/SystemMonitorView';
-import {
-  LayoutDashboard,
-  Map as MapIcon,
-  Users,
-  Settings,
-  ShieldAlert,
-  Camera,
-  Sun,
-  Moon,
-  FileSearch,
-  Package,
-  CreditCard,
-  FileDown,
-  List,
-  ScanEye,
-  Bell,
-  Plug,
-  Upload,
-  Search,
-  Activity,
-} from 'lucide-react';
+import { OperationsDashboard } from './components/dashboard';
+import { Sidebar, MobileNav, FullscreenButton } from './components/layout';
+import { Sun, Moon, Search } from 'lucide-react';
+
+// View titles for the header
+const VIEW_TITLES: Record<string, { title: string; subtitle: string }> = {
+  dashboard: { title: 'Dashboard', subtitle: 'Real-time parking operations overview' },
+  'operations-dashboard': { title: 'Operations Dashboard', subtitle: 'Real-time site monitoring' },
+  'vrm-search': { title: 'VRM Search', subtitle: 'Search vehicle registration history' },
+  sites: { title: 'Sites Management', subtitle: 'Configure and manage parking sites' },
+  'plate-review': { title: 'Plate Review Queue', subtitle: 'Review plates requiring verification' },
+  enforcement: { title: 'Enforcement Review', subtitle: 'Review and process PCN candidates' },
+  'pcn-export': { title: 'PCN Batch Export', subtitle: 'Export approved PCNs for processing' },
+  events: { title: 'ANPR Events', subtitle: 'View all vehicle detection events' },
+  'parking-events': { title: 'Parking Events Overview', subtitle: 'Complete parking session history' },
+  permits: { title: 'Permits & Whitelist', subtitle: 'Manage permitted vehicles' },
+  alarms: { title: 'Alarm Centre', subtitle: 'Monitor and manage system alarms' },
+  'system-monitor': { title: 'System Monitor', subtitle: 'System health and performance metrics' },
+  payments: { title: 'Payment Tracking', subtitle: 'Track and reconcile payments' },
+  'payment-providers': { title: 'Payment Providers', subtitle: 'Configure payment integrations' },
+  'customer-export': { title: 'Customer Export', subtitle: 'Export customer data for reporting' },
+  audit: { title: 'Audit Trail', subtitle: 'System activity and change history' },
+  build: { title: 'Build History & Version', subtitle: 'Deployment and version information' },
+  settings: { title: 'System Settings', subtitle: 'Configure system preferences' },
+};
 
 function App() {
   const [currentView, setCurrentView] = useState('dashboard');
@@ -83,196 +87,62 @@ function App() {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
+  const handleNavigate = (viewId: string) => {
+    setCurrentView(viewId);
+  };
+
+  const viewInfo = VIEW_TITLES[currentView] || { title: 'Dashboard', subtitle: '' };
+
+  // Operations Dashboard is a full-screen view without the standard layout
+  if (currentView === 'operations-dashboard') {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors duration-200">
+        <MobileNav currentView={currentView} onNavigate={handleNavigate} />
+        <div className="flex">
+          <Sidebar currentView={currentView} onNavigate={handleNavigate} />
+          <main className="flex-1 overflow-y-auto">
+            <OperationsDashboard />
+          </main>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex transition-colors duration-200">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 hidden md:block transition-colors">
-        <div className="p-6">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <span className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-lg">
-              P
-            </span>
-            POS Admin
-          </h1>
-        </div>
-        <nav className="mt-6 px-4 space-y-1">
-          <button
-            onClick={() => setCurrentView('dashboard')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'dashboard' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-          >
-            <LayoutDashboard className="w-5 h-5" />
-            Dashboard
-          </button>
-          <button
-            onClick={() => setCurrentView('vrm-search')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'vrm-search' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-          >
-            <Search className="w-5 h-5" />
-            VRM Search
-          </button>
-          <button
-            onClick={() => setCurrentView('sites')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'sites' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-          >
-            <MapIcon className="w-5 h-5" />
-            Sites
-          </button>
-          <button
-            onClick={() => setCurrentView('plate-review')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'plate-review' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-          >
-            <ScanEye className="w-5 h-5" />
-            Plate Review
-          </button>
-          <button
-            onClick={() => setCurrentView('enforcement')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'enforcement' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-          >
-            <ShieldAlert className="w-5 h-5" />
-            Review Queue
-          </button>
-          <button
-            onClick={() => setCurrentView('pcn-export')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'pcn-export' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-          >
-            <FileDown className="w-5 h-5" />
-            PCN Export
-          </button>
-          <button
-            onClick={() => setCurrentView('events')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'events' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-          >
-            <Camera className="w-5 h-5" />
-            Events
-          </button>
-          <button
-            onClick={() => setCurrentView('parking-events')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'parking-events' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-          >
-            <List className="w-5 h-5" />
-            Parking Events
-          </button>
-          <button
-            onClick={() => setCurrentView('permits')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'permits' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-          >
-            <Users className="w-5 h-5" />
-            Permits
-          </button>
-          <button
-            onClick={() => setCurrentView('audit')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'audit' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-          >
-            <FileSearch className="w-5 h-5" />
-            Audit Trail
-          </button>
-          <button
-            onClick={() => setCurrentView('build')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'build' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-          >
-            <Package className="w-5 h-5" />
-            Build History
-          </button>
-          <button
-            onClick={() => setCurrentView('payments')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'payments' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-          >
-            <CreditCard className="w-5 h-5" />
-            Payment Tracking
-          </button>
-          <button
-            onClick={() => setCurrentView('alarms')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'alarms' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-          >
-            <Bell className="w-5 h-5" />
-            Alarms
-          </button>
-          <button
-            onClick={() => setCurrentView('payment-providers')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'payment-providers' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-          >
-            <Plug className="w-5 h-5" />
-            Payment Providers
-          </button>
-          <button
-            onClick={() => setCurrentView('customer-export')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'customer-export' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-          >
-            <Upload className="w-5 h-5" />
-            Customer Export
-          </button>
-          <button
-            onClick={() => setCurrentView('system-monitor')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'system-monitor' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-          >
-            <Activity className="w-5 h-5" />
-            System Monitor
-          </button>
-          <button
-            onClick={() => setCurrentView('settings')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'settings' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-          >
-            <Settings className="w-5 h-5" />
-            Settings
-          </button>
-        </nav>
-      </aside>
+      {/* Mobile Navigation */}
+      <MobileNav currentView={currentView} onNavigate={handleNavigate} />
+
+      {/* Desktop Sidebar */}
+      <Sidebar currentView={currentView} onNavigate={handleNavigate} />
 
       {/* Main Content */}
-      <main className="flex-1 p-8 overflow-y-auto">
-        <header className="flex justify-between items-center mb-8">
+      <main className="flex-1 p-8 overflow-y-auto md:ml-0">
+        {/* Mobile top padding for hamburger menu */}
+        <div className="h-12 md:hidden" />
+
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors">
-              {currentView === 'dashboard'
-                ? 'Dashboard'
-                : currentView === 'vrm-search'
-                  ? 'VRM Search'
-                  : currentView === 'sites'
-                  ? 'Sites Management'
-                  : currentView === 'events'
-                    ? 'ANPR Events'
-                    : currentView === 'parking-events'
-                      ? 'Parking Events Overview'
-                      : currentView === 'permits'
-                        ? 'Permits & Whitelist'
-                        : currentView === 'audit'
-                          ? 'Audit Trail'
-                          : currentView === 'build'
-                            ? 'Build History & Version'
-                            : currentView === 'payments'
-                              ? 'Payment Tracking'
-                              : currentView === 'alarms'
-                                ? 'Alarm Centre'
-                                : currentView === 'payment-providers'
-                                  ? 'Payment Providers'
-                                  : currentView === 'customer-export'
-                                    ? 'Customer Export'
-                                    : currentView === 'system-monitor'
-                                      ? 'System Monitor'
-                                      : currentView === 'pcn-export'
-                                  ? 'PCN Batch Export'
-                                  : currentView === 'plate-review'
-                                    ? 'Plate Review Queue'
-                                    : currentView === 'settings'
-                                      ? 'System Settings'
-                                      : 'Enforcement Review'}
+              {viewInfo.title}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 mt-1 transition-colors">
-              Real-time parking operations overview
+              {viewInfo.subtitle}
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 flex-wrap">
             <button
               onClick={() => setCurrentView('vrm-search')}
               className="flex items-center gap-3 px-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all shadow-sm"
             >
               <Search className="w-4 h-4" />
-              <span className="text-sm">Search VRM</span>
+              <span className="text-sm hidden sm:inline">Search VRM</span>
               <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-gray-100 dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700">
                 <span className="text-xs">⌘</span>K
               </kbd>
             </button>
             <AlarmNotificationBell />
+            <FullscreenButton />
             <button
               onClick={toggleTheme}
               className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all shadow-sm"
@@ -284,7 +154,7 @@ function App() {
                 <Sun className="w-5 h-5" />
               )}
             </button>
-            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 font-medium bg-white dark:bg-slate-900 px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm transition-colors">
+            <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 font-medium bg-white dark:bg-slate-900 px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm transition-colors">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
               System Online
             </div>
