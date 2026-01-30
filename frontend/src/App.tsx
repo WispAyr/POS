@@ -18,6 +18,7 @@ import { CustomerExportDashboard } from './components/CustomerExportDashboard';
 import { VrmSearch } from './components/VrmSearch';
 import { SystemMonitorView } from './components/SystemMonitorView';
 import { OperationsDashboard } from './components/dashboard';
+import { ScheduledNotificationDashboard } from './components/notifications/ScheduledNotificationDashboard';
 import { Sidebar, MobileNav, FullscreenButton } from './components/layout';
 import { Sun, Moon, Search } from 'lucide-react';
 
@@ -34,6 +35,7 @@ const VIEW_TITLES: Record<string, { title: string; subtitle: string }> = {
   'parking-events': { title: 'Parking Events Overview', subtitle: 'Complete parking session history' },
   permits: { title: 'Permits & Whitelist', subtitle: 'Manage permitted vehicles' },
   alarms: { title: 'Alarm Centre', subtitle: 'Monitor and manage system alarms' },
+  'scheduled-notifications': { title: 'Scheduled Notifications', subtitle: 'Configure automated notifications and actions' },
   'system-monitor': { title: 'System Monitor', subtitle: 'System health and performance metrics' },
   payments: { title: 'Payment Tracking', subtitle: 'Track and reconcile payments' },
   'payment-providers': { title: 'Payment Providers', subtitle: 'Configure payment integrations' },
@@ -175,6 +177,7 @@ function App() {
           {currentView === 'build' && <BuildAuditView />}
           {currentView === 'payments' && <PaymentTrackingView />}
           {currentView === 'alarms' && <AlarmDashboard />}
+          {currentView === 'scheduled-notifications' && <ScheduledNotificationDashboard />}
           {currentView === 'payment-providers' && <PaymentProviderConfig />}
           {currentView === 'customer-export' && <CustomerExportDashboard />}
           {currentView === 'system-monitor' && <SystemMonitorView />}

@@ -19,6 +19,7 @@ import { CustomerExportModule } from './customer-export/customer-export.module';
 import { SearchModule } from './search/search.module';
 import { SystemMonitorModule } from './system-monitor/system-monitor.module';
 import { OperationsDashboardModule } from './operations-dashboard/operations-dashboard.module';
+import { ScheduledNotificationsModule } from './scheduled-notifications/scheduled-notifications.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -58,6 +59,7 @@ import { AppController } from './app.controller';
     SearchModule,
     SystemMonitorModule,
     OperationsDashboardModule,
+    ScheduledNotificationsModule,
   ],
   controllers: [AppController],
 })

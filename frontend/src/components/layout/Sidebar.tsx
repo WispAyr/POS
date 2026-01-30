@@ -20,6 +20,7 @@ import {
   PanelLeftClose,
   PanelLeft,
   Monitor,
+  Send,
 } from 'lucide-react';
 import { SidebarGroup } from './SidebarGroup';
 
@@ -61,6 +62,7 @@ const NAV_GROUPS = [
     key: 'monitoring',
     items: [
       { icon: Bell, label: 'Alarms', viewId: 'alarms' },
+      { icon: Send, label: 'Notifications', viewId: 'scheduled-notifications' },
       { icon: Activity, label: 'System Monitor', viewId: 'system-monitor' },
       { icon: MapIcon, label: 'Sites', viewId: 'sites' },
     ],
