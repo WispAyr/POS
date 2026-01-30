@@ -35,6 +35,7 @@ export interface EmailParserConfig {
   attachmentType: 'CSV' | 'EXCEL';
   parserConfig: {
     skipRows?: number;
+    headerRow?: number; // 0-indexed row number containing column headers
     delimiter?: string;
     columnMapping: {
       vrm: string;
@@ -45,6 +46,7 @@ export interface EmailParserConfig {
       externalReference?: string;
     };
     dateFormat?: string;
+    siteMapping?: Record<string, string>; // Maps provider site IDs to system site IDs
   };
 }
 

@@ -91,6 +91,11 @@ export class EmailPaymentParserService {
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
 
+      // If headerRow is specified, use raw array parsing with custom header row
+      if (parserConfig.headerRow !== undefined) {
+        return this.parseExcelWithHeaderRow(sheet, parserConfig);
+      }
+
       // Convert to JSON with header row
       const rows = XLSX.utils.sheet_to_json(sheet, {
         raw: false,
@@ -122,6 +127,68 @@ export class EmailPaymentParserService {
       return { records, errors, totalRows: dataRows.length };
     } catch (err: any) {
       this.logger.error(`Failed to parse Excel: ${err.message}`);
+      errors.push({
+        message: `Excel parse error: ${err.message}`,
+        timestamp: new Date(),
+      });
+      return { records, errors, totalRows: 0 };
+    }
+  }
+
+  private parseExcelWithHeaderRow(
+    sheet: XLSX.WorkSheet,
+    parserConfig: EmailParserConfig['parserConfig'],
+  ): ParseResult {
+    const records: ParsedPaymentRecord[] = [];
+    const errors: IngestionError[] = [];
+
+    try {
+      // Parse as raw array
+      const rawRows = XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        raw: false,
+        defval: '',
+      }) as string[][];
+
+      const headerRowIdx = parserConfig.headerRow || 0;
+      const dataStartRow = parserConfig.skipRows || (headerRowIdx + 1);
+
+      // Get header row
+      const headers = rawRows[headerRowIdx] || [];
+      this.logger.debug(`Headers at row ${headerRowIdx}: ${headers.join(', ')}`);
+
+      // Process data rows
+      for (let i = dataStartRow; i < rawRows.length; i++) {
+        const rowData = rawRows[i];
+        if (!rowData || rowData.every((cell) => !cell)) continue; // Skip empty rows
+
+        const rowNum = i + 1; // 1-indexed for user-facing
+
+        // Create object from headers and row data
+        const row: Record<string, string> = {};
+        for (let j = 0; j < headers.length; j++) {
+          const header = headers[j] || `col_${j}`;
+          row[header] = rowData[j] || '';
+        }
+
+        try {
+          const record = this.mapRowToRecord(row, parserConfig, rowNum);
+          if (record) {
+            records.push(record);
+          }
+        } catch (err: any) {
+          errors.push({
+            row: rowNum,
+            message: err.message,
+            value: row,
+            timestamp: new Date(),
+          });
+        }
+      }
+
+      return { records, errors, totalRows: rawRows.length - dataStartRow };
+    } catch (err: any) {
+      this.logger.error(`Failed to parse Excel with header row: ${err.message}`);
       errors.push({
         message: `Excel parse error: ${err.message}`,
         timestamp: new Date(),
