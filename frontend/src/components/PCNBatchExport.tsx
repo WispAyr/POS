@@ -59,7 +59,8 @@ export function PCNBatchExport() {
   const fetchApprovedPCNs = async () => {
     try {
       const { data } = await axios.get('/enforcement/approved');
-      setPcns(data);
+      // Handle both array and paginated response formats
+      setPcns(data.items || data);
     } catch (error) {
       console.error('Failed to fetch approved PCNs', error);
     } finally {

@@ -208,7 +208,15 @@ export function EnforcementReview() {
 
   useEffect(() => {
     if (currentDecision) {
-      fetchVehicleData(currentDecision.vrm);
+      // Skip fetching for UNKNOWN or empty VRMs
+      if (currentDecision.vrm && currentDecision.vrm !== 'UNKNOWN') {
+        fetchVehicleData(currentDecision.vrm);
+      } else {
+        // Reset vehicle data for unknown VRMs
+        setVehicleHistory(null);
+        setVehicleNotes([]);
+        setVehicleMarkers([]);
+      }
       setDecisionNote('');
       setShowDetails(false);
     }
