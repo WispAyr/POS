@@ -111,7 +111,7 @@ async function seed() {
         type: def.type,
         severity: def.severity,
         conditions: def.conditions,
-        cronSchedule: def.cronSchedule,
+        cronSchedule: def.cronSchedule ?? undefined,
         enabled: def.enabled,
         notificationChannels: def.notificationChannels,
       });
