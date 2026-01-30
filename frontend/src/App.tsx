@@ -16,6 +16,7 @@ import { AlarmNotificationBell } from './components/AlarmNotificationBell';
 import { PaymentProviderConfig } from './components/PaymentProviderConfig';
 import { CustomerExportDashboard } from './components/CustomerExportDashboard';
 import { VrmSearch } from './components/VrmSearch';
+import { SystemMonitorView } from './components/SystemMonitorView';
 import {
   LayoutDashboard,
   Map as MapIcon,
@@ -35,6 +36,7 @@ import {
   Plug,
   Upload,
   Search,
+  Activity,
 } from 'lucide-react';
 
 function App() {
@@ -200,6 +202,13 @@ function App() {
             Customer Export
           </button>
           <button
+            onClick={() => setCurrentView('system-monitor')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'system-monitor' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+          >
+            <Activity className="w-5 h-5" />
+            System Monitor
+          </button>
+          <button
             onClick={() => setCurrentView('settings')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'settings' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
           >
@@ -238,7 +247,9 @@ function App() {
                                   ? 'Payment Providers'
                                   : currentView === 'customer-export'
                                     ? 'Customer Export'
-                                    : currentView === 'pcn-export'
+                                    : currentView === 'system-monitor'
+                                      ? 'System Monitor'
+                                      : currentView === 'pcn-export'
                                   ? 'PCN Batch Export'
                                   : currentView === 'plate-review'
                                     ? 'Plate Review Queue'
@@ -296,6 +307,7 @@ function App() {
           {currentView === 'alarms' && <AlarmDashboard />}
           {currentView === 'payment-providers' && <PaymentProviderConfig />}
           {currentView === 'customer-export' && <CustomerExportDashboard />}
+          {currentView === 'system-monitor' && <SystemMonitorView />}
           {currentView === 'settings' && <SettingsView />}
         </div>
       </main>

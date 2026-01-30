@@ -17,6 +17,7 @@ import { PaymentProviderModule } from './payment-provider/payment-provider.modul
 import { AlarmModule } from './alarm/alarm.module';
 import { CustomerExportModule } from './customer-export/customer-export.module';
 import { SearchModule } from './search/search.module';
+import { SystemMonitorModule } from './system-monitor/system-monitor.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -54,6 +55,7 @@ import { AppController } from './app.controller';
     AlarmModule,
     CustomerExportModule,
     SearchModule,
+    SystemMonitorModule,
   ],
   controllers: [AppController],
 })
