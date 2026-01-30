@@ -30,6 +30,27 @@ export class Site {
       name?: string;
     }[];
     realTime?: boolean;
+    liveOps?: {
+      enabled: boolean;
+      cameras?: {
+        id: string;
+        name: string;
+        protectId: string;
+      }[];
+      announcements?: {
+        id: string;
+        label: string;
+        message: string;
+        target: 'cameras' | 'horn' | 'all';
+        volume: number;
+      }[];
+      controls?: {
+        barrier?: {
+          enabled: boolean;
+          apiEndpoint?: string;
+        };
+      };
+    };
     [key: string]: any;
   };
 
