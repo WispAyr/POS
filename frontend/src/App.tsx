@@ -14,6 +14,7 @@ import PlateReviewQueue from './components/PlateReviewQueue';
 import { AlarmDashboard } from './components/AlarmDashboard';
 import { AlarmNotificationBell } from './components/AlarmNotificationBell';
 import { PaymentProviderConfig } from './components/PaymentProviderConfig';
+import { CustomerExportDashboard } from './components/CustomerExportDashboard';
 import {
   LayoutDashboard,
   Map as MapIcon,
@@ -31,6 +32,7 @@ import {
   ScanEye,
   Bell,
   Plug,
+  Upload,
 } from 'lucide-react';
 
 function App() {
@@ -170,6 +172,13 @@ function App() {
             Payment Providers
           </button>
           <button
+            onClick={() => setCurrentView('customer-export')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'customer-export' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+          >
+            <Upload className="w-5 h-5" />
+            Customer Export
+          </button>
+          <button
             onClick={() => setCurrentView('settings')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'settings' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
           >
@@ -204,7 +213,9 @@ function App() {
                                 ? 'Alarm Centre'
                                 : currentView === 'payment-providers'
                                   ? 'Payment Providers'
-                                  : currentView === 'pcn-export'
+                                  : currentView === 'customer-export'
+                                    ? 'Customer Export'
+                                    : currentView === 'pcn-export'
                                   ? 'PCN Batch Export'
                                   : currentView === 'plate-review'
                                     ? 'Plate Review Queue'
@@ -250,6 +261,7 @@ function App() {
           {currentView === 'payments' && <PaymentTrackingView />}
           {currentView === 'alarms' && <AlarmDashboard />}
           {currentView === 'payment-providers' && <PaymentProviderConfig />}
+          {currentView === 'customer-export' && <CustomerExportDashboard />}
           {currentView === 'settings' && <SettingsView />}
         </div>
       </main>
