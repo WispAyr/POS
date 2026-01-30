@@ -5,7 +5,8 @@ import {
   IsBoolean,
   IsObject,
 } from 'class-validator';
-import { ActionType, MondayActionConfig } from '../entities/scheduled-action.entity';
+import { ActionType } from '../entities/scheduled-action.entity';
+import type { MondayActionConfig } from '../entities/scheduled-action.entity';
 
 export class CreateScheduledActionDto {
   @IsString()

@@ -88,6 +88,7 @@ export class AnprFolderImportService {
     options?: {
       deleteAfterImport?: boolean;
       limit?: number;
+      batchSize?: number;
     },
   ): Promise<ImportResult> {
     if (this.isImporting) {
@@ -97,6 +98,7 @@ export class AnprFolderImportService {
     this.isImporting = true;
     const startTime = Date.now();
     const errorDetails: Array<{ file: string; error: string }> = [];
+    const batchSize = options?.batchSize || 500; // Process 500 files at a time
 
     try {
       // Use provided path or default from sync service
@@ -107,15 +109,15 @@ export class AnprFolderImportService {
         throw new Error(`Import folder does not exist: ${absolutePath}`);
       }
 
-      const files = fs
+      const allFiles = fs
         .readdirSync(absolutePath)
         .filter((f) => f.endsWith('.json'));
 
       this.logger.log(
-        `Found ${files.length} JSON files to import from ${absolutePath}`,
+        `Found ${allFiles.length} JSON files to import from ${absolutePath}`,
       );
 
-      if (files.length === 0) {
+      if (allFiles.length === 0) {
         return {
           totalFiles: 0,
           validMovements: 0,
@@ -127,43 +129,65 @@ export class AnprFolderImportService {
         };
       }
 
-      // Read and sort movements chronologically
-      const movements = this.readAndSortMovements(absolutePath, files);
-      const movementsToProcess = options?.limit
-        ? movements.slice(0, options.limit)
-        : movements;
+      // Apply limit to file list before processing
+      const files = options?.limit ? allFiles.slice(0, options.limit) : allFiles;
+      const totalFilesToProcess = files.length;
 
       this.logger.log(
-        `Processing ${movementsToProcess.length} valid movements (sorted chronologically)`,
+        `Processing ${totalFilesToProcess} files in batches of ${batchSize}`,
       );
 
       let processed = 0;
       let success = 0;
       let errors = 0;
+      let validMovements = 0;
+      let skipped = 0;
 
-      // Process sequentially to maintain chronological order
-      for (const { file, data } of movementsToProcess) {
-        try {
-          await this.processMovement(file, data);
-          success++;
+      // Process files in batches to avoid memory exhaustion
+      for (let batchStart = 0; batchStart < totalFilesToProcess; batchStart += batchSize) {
+        const batchEnd = Math.min(batchStart + batchSize, totalFilesToProcess);
+        const batchFiles = files.slice(batchStart, batchEnd);
 
-          // Delete file after successful import if requested
-          if (options?.deleteAfterImport) {
-            const filePath = path.join(absolutePath, file);
-            fs.unlinkSync(filePath);
+        this.logger.log(
+          `Processing batch ${Math.floor(batchStart / batchSize) + 1}: files ${batchStart + 1}-${batchEnd}`,
+        );
+
+        // Read and sort movements for this batch only
+        const movements = this.readAndSortMovements(absolutePath, batchFiles);
+        validMovements += movements.length;
+        skipped += batchFiles.length - movements.length;
+
+        // Process this batch
+        for (const { file, data } of movements) {
+          try {
+            await this.processMovement(file, data);
+            success++;
+
+            // Delete file after successful import if requested
+            if (options?.deleteAfterImport) {
+              const filePath = path.join(absolutePath, file);
+              fs.unlinkSync(filePath);
+            }
+          } catch (err) {
+            errors++;
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            if (errorDetails.length < 100) { // Limit error details to prevent memory issues
+              errorDetails.push({ file, error: errorMessage });
+            }
+            this.logger.error(`Error processing ${file}: ${errorMessage}`);
           }
-        } catch (err) {
-          errors++;
-          const errorMessage = err instanceof Error ? err.message : String(err);
-          errorDetails.push({ file, error: errorMessage });
-          this.logger.error(`Error processing ${file}: ${errorMessage}`);
+
+          processed++;
+          if (processed % 100 === 0) {
+            this.logger.log(
+              `Progress: ${processed}/${totalFilesToProcess} (${success} success, ${errors} errors)`,
+            );
+          }
         }
 
-        processed++;
-        if (processed % 100 === 0) {
-          this.logger.log(
-            `Progress: ${processed}/${movementsToProcess.length} (${success} success, ${errors} errors)`,
-          );
+        // Force garbage collection hint between batches
+        if (global.gc) {
+          global.gc();
         }
       }
 
@@ -173,12 +197,12 @@ export class AnprFolderImportService {
       );
 
       return {
-        totalFiles: files.length,
-        validMovements: movements.length,
+        totalFiles: allFiles.length,
+        validMovements,
         processed,
         success,
         errors,
-        skipped: movements.length - movementsToProcess.length,
+        skipped,
         duration,
         errorDetails: errorDetails.length > 0 ? errorDetails : undefined,
       };
@@ -191,12 +215,16 @@ export class AnprFolderImportService {
     folderPath: string,
     files: string[],
   ): MovementData[] {
-    const movements: MovementData[] = [];
+    // First pass: extract timestamps for sorting (minimal memory)
+    const fileTimestamps: Array<{ file: string; timestamp: Date }> = [];
 
     for (const file of files) {
       try {
         const filePath = path.join(folderPath, file);
-        const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        const content = fs.readFileSync(filePath, 'utf-8');
+
+        // Quick parse to check validity and get timestamp
+        const data = JSON.parse(content);
 
         // Skip invalid entries
         if (
@@ -211,16 +239,28 @@ export class AnprFolderImportService {
           ? new Date(data.timestamp)
           : new Date();
 
-        movements.push({ file, timestamp, data });
+        fileTimestamps.push({ file, timestamp });
       } catch (err) {
         this.logger.warn(`Error reading ${file}: ${err}`);
       }
     }
 
     // Sort by timestamp ascending (oldest first)
-    return movements.sort(
-      (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
-    );
+    fileTimestamps.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+    // Second pass: read full data only for sorted files
+    const movements: MovementData[] = [];
+    for (const { file, timestamp } of fileTimestamps) {
+      try {
+        const filePath = path.join(folderPath, file);
+        const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        movements.push({ file, timestamp, data });
+      } catch (err) {
+        this.logger.warn(`Error re-reading ${file}: ${err}`);
+      }
+    }
+
+    return movements;
   }
 
   private async processMovement(file: string, data: any): Promise<void> {
