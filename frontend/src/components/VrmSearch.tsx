@@ -193,17 +193,14 @@ export function VrmSearch() {
               <StatusBadge
                 active={result.summary.hasActivePayment}
                 label="Active Payment"
-                icon={CreditCard}
               />
               <StatusBadge
                 active={result.summary.hasActivePermit}
                 label="Active Permit"
-                icon={Shield}
               />
               <StatusBadge
                 active={result.summary.hasOpenSession}
                 label="Open Session"
-                icon={Clock}
               />
               {result.summary.markersCount > 0 && (
                 <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 text-sm font-medium">
@@ -471,11 +468,9 @@ export function VrmSearch() {
 function StatusBadge({
   active,
   label,
-  icon: Icon,
 }: {
   active: boolean;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
     <span

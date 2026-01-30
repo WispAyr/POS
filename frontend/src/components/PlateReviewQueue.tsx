@@ -80,7 +80,7 @@ const PlateReviewQueue: React.FC = () => {
 
   const [total, setTotal] = useState(0);
   const [limit] = useState(50);
-  const [offset, setOffset] = useState(0);
+  const [offset, _setOffset] = useState(0);
 
   const correctionInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);

@@ -63,7 +63,7 @@ export function DashboardStats() {
   const [alarmStats, setAlarmStats] = useState<AlarmStats | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchStats = useCallback(async (showRefreshing = false) => {
     if (showRefreshing) setIsRefreshing(true);

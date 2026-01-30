@@ -9,7 +9,6 @@ import {
   Bell,
   RefreshCw,
   Filter,
-  ChevronDown,
   Eye,
   X,
 } from 'lucide-react';

@@ -13,8 +13,6 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  ChevronDown,
-  ChevronUp,
   Trash2,
   Edit,
   Play,

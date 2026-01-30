@@ -816,7 +816,7 @@ function ProviderFormModal({ provider, onClose, onSave }: ProviderFormModalProps
     }
   }
 
-  const handleTypeChange = (newType: string) => {
+  const handleTypeChange = (newType: 'EMAIL' | 'API' | 'WEBHOOK' | 'FILE_DROP') => {
     setFormData((prev) => ({
       ...prev,
       type: newType,
@@ -900,7 +900,7 @@ function ProviderFormModal({ provider, onClose, onSave }: ProviderFormModalProps
               </label>
               <select
                 value={formData.type}
-                onChange={(e) => handleTypeChange(e.target.value)}
+                onChange={(e) => handleTypeChange(e.target.value as 'EMAIL' | 'API' | 'WEBHOOK' | 'FILE_DROP')}
                 disabled={isEdit}
                 className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white disabled:opacity-50"
               >
