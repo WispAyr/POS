@@ -65,6 +65,18 @@ function App() {
     return () => window.removeEventListener('navigate', handleNavigate as EventListener);
   }, []);
 
+  // Global keyboard shortcut: Cmd/Ctrl+K for VRM Search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCurrentView('vrm-search');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
@@ -239,6 +251,16 @@ function App() {
             </p>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setCurrentView('vrm-search')}
+              className="flex items-center gap-3 px-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all shadow-sm"
+            >
+              <Search className="w-4 h-4" />
+              <span className="text-sm">Search VRM</span>
+              <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-gray-100 dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700">
+                <span className="text-xs">⌘</span>K
+              </kbd>
+            </button>
             <AlarmNotificationBell />
             <button
               onClick={toggleTheme}
