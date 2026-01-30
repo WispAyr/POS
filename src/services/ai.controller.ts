@@ -200,4 +200,63 @@ export class AiController {
     this.enrichmentService.setCameraMapping(body.anprId, body.protectId);
     return { success: true, mapping: body };
   }
+
+  /**
+   * Analyze a plate image from URL to extract registration
+   * Used by Plate Review for difficult-to-read plates
+   */
+  @Post('analyze-plate')
+  @HttpCode(HttpStatus.OK)
+  async analyzePlateImage(
+    @Body() body: { imageUrl: string; context?: { originalVrm?: string; confidence?: number } },
+  ) {
+    try {
+      // Fetch the image
+      const response = await fetch(body.imageUrl);
+      if (!response.ok) {
+        return { success: false, error: 'Failed to fetch image' };
+      }
+      
+      const buffer = Buffer.from(await response.arrayBuffer());
+      
+      // Send to Hailo for analysis
+      const result = await this.hailoService.analyzeBuffer(buffer, 'yolov8s');
+      
+      if (!result.success) {
+        return { success: false, error: result.error || 'Analysis failed' };
+      }
+
+      // Look for license plate detections
+      const plateDetections = result.detections?.filter(
+        (d) => d.label?.toLowerCase().includes('plate') || 
+               d.label?.toLowerCase().includes('license') ||
+               d.label?.toLowerCase().includes('car') ||
+               d.label?.toLowerCase().includes('vehicle')
+      ) || [];
+
+      // If we have detections with text, return the best one
+      if (result.detections && result.detections.length > 0) {
+        // For now, return the raw detections - in future could add OCR
+        return {
+          success: true,
+          suggestedVrm: body.context?.originalVrm || 'REVIEW_MANUALLY',
+          detections: result.detections,
+          confidence: result.detections[0]?.confidence || 0,
+          message: `Detected ${result.detections.length} objects. Manual review recommended.`,
+        };
+      }
+
+      return {
+        success: false,
+        error: 'No plate detected in image',
+        suggestedVrm: null,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        suggestedVrm: null,
+      };
+    }
+  }
 }

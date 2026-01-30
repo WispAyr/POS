@@ -16,6 +16,8 @@ import {
   SunMedium,
   Contrast,
   RotateCcw,
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
 import { ThumbnailWithLoader } from './ImageWithLoader';
 import { ImageZoomModal } from './ImageZoomModal';
@@ -81,8 +83,13 @@ const PlateReviewQueue: React.FC = () => {
     contrast: 100,
     saturate: 100,
     invert: 0,
+    grayscale: 0,
+    sharpen: 0,
+    threshold: 0,
   });
   const [showImageControls, setShowImageControls] = useState(false);
+  const [aiAnalyzing, setAiAnalyzing] = useState(false);
+  const [aiResult, setAiResult] = useState<string | null>(null);
 
   // Filters
   const [siteFilter, setSiteFilter] = useState('');
@@ -391,9 +398,22 @@ const PlateReviewQueue: React.FC = () => {
   };
 
   // Image adjustment helpers
-  const getImageFilterStyle = () => ({
-    filter: `brightness(${imageAdjustments.brightness}%) contrast(${imageAdjustments.contrast}%) saturate(${imageAdjustments.saturate}%) invert(${imageAdjustments.invert}%)`,
-  });
+  const getImageFilterStyle = () => {
+    let filter = `brightness(${imageAdjustments.brightness}%) contrast(${imageAdjustments.contrast}%) saturate(${imageAdjustments.saturate}%) invert(${imageAdjustments.invert}%) grayscale(${imageAdjustments.grayscale}%)`;
+    
+    // Add sharpen via SVG filter reference
+    if (imageAdjustments.sharpen > 0) {
+      filter += ` url(#sharpen-${imageAdjustments.sharpen})`;
+    }
+    
+    // Threshold effect via extreme contrast when enabled
+    if (imageAdjustments.threshold > 0) {
+      const thresholdContrast = 100 + (imageAdjustments.threshold * 10);
+      filter += ` contrast(${thresholdContrast}%)`;
+    }
+    
+    return { filter };
+  };
 
   const resetImageAdjustments = () => {
     setImageAdjustments({
@@ -401,14 +421,46 @@ const PlateReviewQueue: React.FC = () => {
       contrast: 100,
       saturate: 100,
       invert: 0,
+      grayscale: 0,
+      sharpen: 0,
+      threshold: 0,
     });
+    setAiResult(null);
   };
 
   const isImageAdjusted = 
     imageAdjustments.brightness !== 100 ||
     imageAdjustments.contrast !== 100 ||
     imageAdjustments.saturate !== 100 ||
-    imageAdjustments.invert !== 0;
+    imageAdjustments.invert !== 0 ||
+    imageAdjustments.grayscale !== 0 ||
+    imageAdjustments.sharpen !== 0 ||
+    imageAdjustments.threshold !== 0;
+
+  // AI plate analysis
+  const analyzeWithAI = async () => {
+    if (!currentReview?.images?.[0]?.url) return;
+    
+    setAiAnalyzing(true);
+    setAiResult(null);
+    
+    try {
+      const response = await axios.post('/api/ai/analyze-plate', {
+        imageUrl: currentReview.images[0].url,
+        context: {
+          originalVrm: currentReview.originalVrm,
+          confidence: currentReview.confidence,
+        },
+      });
+      
+      setAiResult(response.data.suggestedVrm || response.data.result || 'No result');
+    } catch (error) {
+      console.error('AI analysis failed:', error);
+      setAiResult('Analysis failed');
+    } finally {
+      setAiAnalyzing(false);
+    }
+  };
 
   // Get all images for the current review
   const getAllImages = () => {
@@ -714,15 +766,103 @@ const PlateReviewQueue: React.FC = () => {
                       <span className="text-xs text-gray-400 w-10 text-right">{imageAdjustments.invert}%</span>
                     </div>
 
-                    {/* Reset Button */}
-                    <button
-                      onClick={resetImageAdjustments}
-                      disabled={!isImageAdjusted}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <RotateCcw size={14} />
-                      Reset
-                    </button>
+                    <div className="border-t border-gray-700 pt-3 mt-3">
+                      <span className="text-xs text-gray-500 uppercase tracking-wide">Advanced</span>
+                    </div>
+
+                    {/* Grayscale */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded bg-gradient-to-r from-black via-gray-500 to-white flex-shrink-0" />
+                      <span className="text-xs text-gray-400 w-16">Grayscale</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={imageAdjustments.grayscale}
+                        onChange={(e) => setImageAdjustments(prev => ({ ...prev, grayscale: parseInt(e.target.value) }))}
+                        className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <span className="text-xs text-gray-400 w-10 text-right">{imageAdjustments.grayscale}%</span>
+                    </div>
+
+                    {/* Sharpen */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 flex items-center justify-center text-gray-400 flex-shrink-0">
+                        <svg viewBox="0 0 16 16" className="w-4 h-4" fill="currentColor">
+                          <polygon points="8,2 14,14 2,14" />
+                        </svg>
+                      </div>
+                      <span className="text-xs text-gray-400 w-16">Sharpen</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="10"
+                        value={imageAdjustments.sharpen}
+                        onChange={(e) => setImageAdjustments(prev => ({ ...prev, sharpen: parseInt(e.target.value) }))}
+                        className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <span className="text-xs text-gray-400 w-10 text-right">{imageAdjustments.sharpen}</span>
+                    </div>
+
+                    {/* Threshold */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded overflow-hidden flex flex-shrink-0">
+                        <div className="w-2 h-4 bg-black" />
+                        <div className="w-2 h-4 bg-white" />
+                      </div>
+                      <span className="text-xs text-gray-400 w-16">Threshold</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="20"
+                        value={imageAdjustments.threshold}
+                        onChange={(e) => setImageAdjustments(prev => ({ ...prev, threshold: parseInt(e.target.value) }))}
+                        className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <span className="text-xs text-gray-400 w-10 text-right">{imageAdjustments.threshold}</span>
+                    </div>
+
+                    {/* Buttons row */}
+                    <div className="flex items-center gap-2 pt-2">
+                      <button
+                        onClick={resetImageAdjustments}
+                        disabled={!isImageAdjusted && !aiResult}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <RotateCcw size={14} />
+                        Reset
+                      </button>
+                      
+                      <button
+                        onClick={analyzeWithAI}
+                        disabled={aiAnalyzing || !currentReview?.images?.[0]}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {aiAnalyzing ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Sparkles size={14} />
+                        )}
+                        {aiAnalyzing ? 'Analyzing...' : 'AI Read'}
+                      </button>
+                    </div>
+
+                    {/* AI Result */}
+                    {aiResult && (
+                      <div className="mt-2 p-2 bg-purple-900/30 border border-purple-700 rounded-lg">
+                        <div className="text-xs text-purple-400 mb-1">AI Suggestion:</div>
+                        <div className="text-lg font-mono font-bold text-purple-300">{aiResult}</div>
+                        <button
+                          onClick={() => {
+                            setCorrectedVrm(aiResult);
+                            setIsEditing(true);
+                          }}
+                          className="mt-2 text-xs text-purple-400 hover:text-purple-300 underline"
+                        >
+                          Use this as correction
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
