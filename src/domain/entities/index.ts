@@ -16,3 +16,4 @@ export * from './alarm.enums';
 export * from './alarm-definition.entity';
 export * from './alarm.entity';
 export * from './alarm-notification.entity';
+export * from './customer-export-log.entity';
