@@ -15,6 +15,7 @@ import { AlarmDashboard } from './components/AlarmDashboard';
 import { AlarmNotificationBell } from './components/AlarmNotificationBell';
 import { PaymentProviderConfig } from './components/PaymentProviderConfig';
 import { CustomerExportDashboard } from './components/CustomerExportDashboard';
+import { VrmSearch } from './components/VrmSearch';
 import {
   LayoutDashboard,
   Map as MapIcon,
@@ -33,6 +34,7 @@ import {
   Bell,
   Plug,
   Upload,
+  Search,
 } from 'lucide-react';
 
 function App() {
@@ -86,6 +88,13 @@ function App() {
           >
             <LayoutDashboard className="w-5 h-5" />
             Dashboard
+          </button>
+          <button
+            onClick={() => setCurrentView('vrm-search')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'vrm-search' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+          >
+            <Search className="w-5 h-5" />
+            VRM Search
           </button>
           <button
             onClick={() => setCurrentView('sites')}
@@ -195,7 +204,9 @@ function App() {
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors">
               {currentView === 'dashboard'
                 ? 'Dashboard'
-                : currentView === 'sites'
+                : currentView === 'vrm-search'
+                  ? 'VRM Search'
+                  : currentView === 'sites'
                   ? 'Sites Management'
                   : currentView === 'events'
                     ? 'ANPR Events'
@@ -249,6 +260,7 @@ function App() {
 
         <div className="transition-all duration-300">
           {currentView === 'dashboard' && <DashboardStats />}
+          {currentView === 'vrm-search' && <VrmSearch />}
           {currentView === 'sites' && <SitesList />}
           {currentView === 'plate-review' && <PlateReviewQueue />}
           {currentView === 'enforcement' && <EnforcementReview />}

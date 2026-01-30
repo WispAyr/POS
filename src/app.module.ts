@@ -16,6 +16,7 @@ import { PlateReviewModule } from './plate-review/plate-review.module';
 import { PaymentProviderModule } from './payment-provider/payment-provider.module';
 import { AlarmModule } from './alarm/alarm.module';
 import { CustomerExportModule } from './customer-export/customer-export.module';
+import { SearchModule } from './search/search.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -52,6 +53,7 @@ import { AppController } from './app.controller';
     PaymentProviderModule,
     AlarmModule,
     CustomerExportModule,
+    SearchModule,
   ],
   controllers: [AppController],
 })
