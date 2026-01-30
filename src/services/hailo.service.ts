@@ -368,4 +368,56 @@ export class HailoService implements OnModuleInit, OnModuleDestroy {
   isAvailable(): boolean {
     return this.isOnline;
   }
+
+  /**
+   * Perform License Plate Recognition using Hailo LPR models
+   * Uses tiny_yolov4_license_plates for detection + lprnet for OCR
+   */
+  async analyzePlate(buffer: Buffer): Promise<{
+    success: boolean;
+    text?: string;
+    confidence?: number;
+    platesDetected?: number;
+    error?: string;
+  }> {
+    if (!this.isOnline) {
+      const status = await this.getStatus();
+      if (!status.online) {
+        return { success: false, error: 'Hailo AI not available' };
+      }
+    }
+
+    try {
+      const base64 = buffer.toString('base64');
+      
+      const response = await firstValueFrom(
+        this.httpService.post(
+          `${this.hailoApiUrl}/analyze/lpr`,
+          { image: base64 },
+          { timeout: 30000 },
+        ).pipe(
+          catchError((err: AxiosError) => {
+            const data = err.response?.data as { error?: string } | undefined;
+            throw new Error(data?.error || err.message);
+          }),
+        ),
+      );
+
+      const data = response.data;
+      
+      if (!data.success) {
+        return { success: false, error: data.error || 'LPR failed' };
+      }
+
+      return {
+        success: true,
+        text: data.text || '',
+        confidence: data.confidence || 0,
+        platesDetected: data.plates_detected || 0,
+      };
+    } catch (error: any) {
+      this.logger.error(`Hailo LPR failed: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
 }

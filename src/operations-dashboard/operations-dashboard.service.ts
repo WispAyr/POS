@@ -152,13 +152,14 @@ export class OperationsDashboardService {
     const exits = todayMovements.filter((m) => m.direction === 'EXIT').length;
 
     // Get today's violations (enforcement candidates) for this site
-    const violations = await this.decisionRepo.count({
-      where: {
-        siteId,
-        outcome: DecisionOutcome.ENFORCEMENT_CANDIDATE,
-        createdAt: MoreThanOrEqual(todayStart),
-      },
-    });
+    // Decisions are linked through sessions → movements → siteId
+    const violations = await this.decisionRepo
+      .createQueryBuilder('decision')
+      .innerJoin('sessions', 'session', 'decision.sessionId = session.id')
+      .where('session.siteId = :siteId', { siteId })
+      .andWhere('decision.outcome = :outcome', { outcome: DecisionOutcome.ENFORCEMENT_CANDIDATE })
+      .andWhere('decision.createdAt >= :todayStart', { todayStart })
+      .getCount();
 
     // Calculate hourly activity
     const hourlyActivity: { hour: number; count: number }[] = [];

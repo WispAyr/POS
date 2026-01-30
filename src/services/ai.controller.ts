@@ -248,41 +248,27 @@ export class AiController {
     context?: { originalVrm?: string; confidence?: number },
   ) {
     try {
-      // First detect the plate region using tiny_yolov4_license_plates
-      const detectionResult = await this.hailoService.analyzeBuffer(
-        buffer, 
-        'tiny_yolov4_license_plates_h8l'
-      );
+      // Use the dedicated LPR endpoint which handles detection + OCR
+      const lprResult = await this.hailoService.analyzePlate(buffer);
       
-      if (!detectionResult.success) {
-        // Fallback to general detection
-        const fallbackResult = await this.hailoService.analyzeBuffer(buffer, 'yolov8s');
+      if (!lprResult.success) {
         return {
           success: false,
-          error: 'LPR model not available, using general detection',
-          detections: fallbackResult.detections,
+          error: lprResult.error || 'Hailo LPR failed',
           suggestedVrm: context?.originalVrm || 'REVIEW_MANUALLY',
+          provider: 'hailo',
         };
       }
 
-      // Then run OCR with lprnet on detected plate regions
-      const ocrResult = await this.hailoService.analyzeBuffer(buffer, 'lprnet_h8l');
-      
-      if (ocrResult.success && ocrResult.text) {
-        return {
-          success: true,
-          suggestedVrm: ocrResult.text.toUpperCase().replace(/[^A-Z0-9]/g, ''),
-          confidence: ocrResult.confidence || 0,
-          provider: 'hailo',
-          detections: detectionResult.detections,
-        };
-      }
+      const cleanVrm = (lprResult.text || '')
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '');
 
       return {
         success: true,
-        suggestedVrm: context?.originalVrm || 'REVIEW_MANUALLY',
-        detections: detectionResult.detections,
-        message: 'Plate detected but OCR unclear',
+        suggestedVrm: cleanVrm || context?.originalVrm || 'UNREADABLE',
+        confidence: lprResult.confidence || 0,
+        platesDetected: lprResult.platesDetected || 0,
         provider: 'hailo',
       };
     } catch (error) {
@@ -290,6 +276,7 @@ export class AiController {
         success: false,
         error: error instanceof Error ? error.message : 'Hailo LPR failed',
         suggestedVrm: null,
+        provider: 'hailo',
       };
     }
   }
