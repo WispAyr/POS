@@ -13,6 +13,7 @@ import { PaymentTrackingView } from './components/PaymentTrackingView';
 import PlateReviewQueue from './components/PlateReviewQueue';
 import { AlarmDashboard } from './components/AlarmDashboard';
 import { AlarmNotificationBell } from './components/AlarmNotificationBell';
+import { PaymentProviderConfig } from './components/PaymentProviderConfig';
 import {
   LayoutDashboard,
   Map as MapIcon,
@@ -29,6 +30,7 @@ import {
   List,
   ScanEye,
   Bell,
+  Plug,
 } from 'lucide-react';
 
 function App() {
@@ -161,6 +163,13 @@ function App() {
             Alarms
           </button>
           <button
+            onClick={() => setCurrentView('payment-providers')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'payment-providers' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+          >
+            <Plug className="w-5 h-5" />
+            Payment Providers
+          </button>
+          <button
             onClick={() => setCurrentView('settings')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${currentView === 'settings' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
           >
@@ -193,7 +202,9 @@ function App() {
                               ? 'Payment Tracking'
                               : currentView === 'alarms'
                                 ? 'Alarm Centre'
-                                : currentView === 'pcn-export'
+                                : currentView === 'payment-providers'
+                                  ? 'Payment Providers'
+                                  : currentView === 'pcn-export'
                                   ? 'PCN Batch Export'
                                   : currentView === 'plate-review'
                                     ? 'Plate Review Queue'
@@ -238,6 +249,7 @@ function App() {
           {currentView === 'build' && <BuildAuditView />}
           {currentView === 'payments' && <PaymentTrackingView />}
           {currentView === 'alarms' && <AlarmDashboard />}
+          {currentView === 'payment-providers' && <PaymentProviderConfig />}
           {currentView === 'settings' && <SettingsView />}
         </div>
       </main>
