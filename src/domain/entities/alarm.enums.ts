@@ -28,6 +28,7 @@ export enum NotificationChannel {
   IN_APP = 'IN_APP',
   EMAIL = 'EMAIL',
   SMS = 'SMS',
+  TELEGRAM = 'TELEGRAM',
 }
 
 export enum NotificationStatus {

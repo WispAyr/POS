@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DomainModule } from '../domain/domain.module';
 import { AuditModule } from '../audit/audit.module';
+import { EngineModule } from '../engine/engine.module';
 import {
   Decision,
   Session,
@@ -16,6 +17,7 @@ import { EnforcementService } from './services/enforcement.service';
   imports: [
     DomainModule,
     AuditModule, // Provides AuditService
+    EngineModule, // Provides EnforcementReevaluationService
     TypeOrmModule.forFeature([
       Decision,
       Session,

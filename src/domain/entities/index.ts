@@ -17,3 +17,5 @@ export * from './alarm-definition.entity';
 export * from './alarm.entity';
 export * from './alarm-notification.entity';
 export * from './customer-export-log.entity';
+export * from './plate-review.entity';
+export * from './plate-validation-rule.entity';

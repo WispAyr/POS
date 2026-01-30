@@ -13,6 +13,7 @@ import {
 import { SessionService } from './services/session.service';
 import { RuleEngineService } from './services/rule-engine.service';
 import { ReconciliationService } from './services/reconciliation.service';
+import { EnforcementReevaluationService } from './services/enforcement-reevaluation.service';
 
 @Module({
   imports: [
@@ -27,7 +28,17 @@ import { ReconciliationService } from './services/reconciliation.service';
       Permit,
     ]),
   ],
-  providers: [SessionService, RuleEngineService, ReconciliationService],
-  exports: [SessionService, RuleEngineService, ReconciliationService],
+  providers: [
+    SessionService,
+    RuleEngineService,
+    ReconciliationService,
+    EnforcementReevaluationService,
+  ],
+  exports: [
+    SessionService,
+    RuleEngineService,
+    ReconciliationService,
+    EnforcementReevaluationService,
+  ],
 })
 export class EngineModule {}

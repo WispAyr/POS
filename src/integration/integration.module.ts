@@ -9,6 +9,7 @@ import { QRWhitelistService } from './qr-whitelist.service';
 import { MondayController } from './monday.controller';
 import { QRWhitelistController } from './qr-whitelist.controller';
 import { AuditModule } from '../audit/audit.module';
+import { EngineModule } from '../engine/engine.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AuditModule } from '../audit/audit.module';
     ScheduleModule.forRoot(), // Initialize Scheduler
     TypeOrmModule.forFeature([Site, Permit]),
     forwardRef(() => AuditModule),
+    EngineModule, // Provides ReconciliationService for permit reconciliation
   ],
   controllers: [MondayController, QRWhitelistController],
   providers: [MondayIntegrationService, QRWhitelistService],

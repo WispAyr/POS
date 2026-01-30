@@ -7,11 +7,13 @@ import {
   Param,
   Delete,
   Query,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
 import { Permit, PermitType } from '../domain/entities/permit.entity';
 import { MondayIntegrationService } from '../integration/monday-integration.service';
+import { ReconciliationService } from '../engine/services/reconciliation.service';
 
 interface CreatePermitDto {
   vrm: string;
@@ -24,10 +26,13 @@ interface CreatePermitDto {
 
 @Controller('api/permits')
 export class PermitsController {
+  private readonly logger = new Logger(PermitsController.name);
+
   constructor(
     @InjectRepository(Permit)
     private readonly permitRepo: Repository<Permit>,
     private readonly mondayService: MondayIntegrationService,
+    private readonly reconciliationService: ReconciliationService,
   ) {}
 
   @Get()
@@ -59,6 +64,22 @@ export class PermitsController {
       await this.mondayService.pushPermitToMonday(saved);
     }
 
+    // Trigger reconciliation for enforcement candidates with this VRM
+    if (saved.active) {
+      this.reconciliationService
+        .reconcilePermit(saved.vrm, saved.siteId, saved.active)
+        .then((result) => {
+          if (result.decisionsUpdated > 0) {
+            this.logger.log(
+              `Permit reconciliation for ${saved.vrm}: ${result.decisionsUpdated} decisions updated`,
+            );
+          }
+        })
+        .catch((err) => {
+          this.logger.error(`Error reconciling permit: ${err.message}`);
+        });
+    }
+
     return saved;
   }
 
@@ -72,6 +93,22 @@ export class PermitsController {
 
     if (updated && updated.type === PermitType.WHITELIST) {
       await this.mondayService.updatePermitOnMonday(updated);
+    }
+
+    // Trigger reconciliation if permit became active or VRM changed
+    if (updated && updated.active) {
+      this.reconciliationService
+        .reconcilePermit(updated.vrm, updated.siteId, updated.active)
+        .then((result) => {
+          if (result.decisionsUpdated > 0) {
+            this.logger.log(
+              `Permit update reconciliation for ${updated.vrm}: ${result.decisionsUpdated} decisions updated`,
+            );
+          }
+        })
+        .catch((err) => {
+          this.logger.error(`Error reconciling permit update: ${err.message}`);
+        });
     }
 
     return updated;

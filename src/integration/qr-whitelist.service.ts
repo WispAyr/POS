@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Permit, PermitType, PermitSource } from '../domain/entities';
 import { AuditService } from '../audit/audit.service';
+import { ReconciliationService } from '../engine/services/reconciliation.service';
 
 interface MondayColumnValue {
   id: string;
@@ -76,6 +77,7 @@ export class QRWhitelistService {
     @InjectRepository(Permit)
     private readonly permitRepo: Repository<Permit>,
     private readonly auditService: AuditService,
+    private readonly reconciliationService: ReconciliationService,
   ) {
     this.apiKey = this.configService.get<string>('MONDAY_API_KEY') || '';
   }
@@ -420,6 +422,22 @@ export class QRWhitelistService {
     this.logger.debug(
       `Ingested QR whitelist permit: ${vrm} (Site: ${config.siteId}, Expires: ${expiryAt.toISOString()})`,
     );
+
+    // Trigger reconciliation for enforcement candidates with this VRM
+    this.reconciliationService
+      .reconcilePermit(vrm, config.siteId, true)
+      .then((result) => {
+        if (result.decisionsUpdated > 0) {
+          this.logger.log(
+            `QR whitelist reconciliation for ${vrm}: ${result.decisionsUpdated} decisions updated`,
+          );
+        }
+      })
+      .catch((err) => {
+        this.logger.error(
+          `Error reconciling QR whitelist permit: ${err.message}`,
+        );
+      });
 
     return { created: true, skipped: false, permit: saved };
   }

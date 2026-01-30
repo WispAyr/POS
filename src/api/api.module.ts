@@ -12,6 +12,7 @@ import { IngestionModule } from '../ingestion/ingestion.module';
 import { IntegrationModule } from '../integration/integration.module';
 import { AuditModule } from '../audit/audit.module';
 import { BuildModule } from '../build/build.module';
+import { EngineModule } from '../engine/engine.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { BuildModule } from '../build/build.module';
     IntegrationModule,
     AuditModule,
     BuildModule,
+    EngineModule, // Provides ReconciliationService for permit reconciliation
     TypeOrmModule.forFeature([Site, Session, Decision, Movement, Permit]),
   ],
   controllers: [
