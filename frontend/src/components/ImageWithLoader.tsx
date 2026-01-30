@@ -5,6 +5,7 @@ interface ImageWithLoaderProps {
   src: string | undefined;
   alt: string;
   className?: string;
+  style?: React.CSSProperties;
   onClick?: () => void;
   showPlaceholderIcon?: boolean;
 }
@@ -87,6 +88,7 @@ export function ThumbnailWithLoader({
   src,
   alt,
   className = '',
+  style,
   onClick,
 }: ImageWithLoaderProps) {
   const [isLoading, setIsLoading] = useState(true);
@@ -114,6 +116,7 @@ export function ThumbnailWithLoader({
                     transition-all duration-300
                     ${isVisible ? 'opacity-100' : 'opacity-0'}
                 `}
+        style={style}
         loading="lazy"
         onClick={onClick}
         onLoad={() => {

@@ -13,6 +13,9 @@ import {
   ChevronRight,
   Keyboard,
   ZoomIn,
+  SunMedium,
+  Contrast,
+  RotateCcw,
 } from 'lucide-react';
 import { ThumbnailWithLoader } from './ImageWithLoader';
 import { ImageZoomModal } from './ImageZoomModal';
@@ -71,6 +74,15 @@ const PlateReviewQueue: React.FC = () => {
   // Image zoom modal state
   const [zoomModalOpen, setZoomModalOpen] = useState(false);
   const [zoomImageIndex, setZoomImageIndex] = useState(0);
+
+  // Image adjustment state
+  const [imageAdjustments, setImageAdjustments] = useState({
+    brightness: 100,
+    contrast: 100,
+    saturate: 100,
+    invert: 0,
+  });
+  const [showImageControls, setShowImageControls] = useState(false);
 
   // Filters
   const [siteFilter, setSiteFilter] = useState('');
@@ -378,6 +390,26 @@ const PlateReviewQueue: React.FC = () => {
       .replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
+  // Image adjustment helpers
+  const getImageFilterStyle = () => ({
+    filter: `brightness(${imageAdjustments.brightness}%) contrast(${imageAdjustments.contrast}%) saturate(${imageAdjustments.saturate}%) invert(${imageAdjustments.invert}%)`,
+  });
+
+  const resetImageAdjustments = () => {
+    setImageAdjustments({
+      brightness: 100,
+      contrast: 100,
+      saturate: 100,
+      invert: 0,
+    });
+  };
+
+  const isImageAdjusted = 
+    imageAdjustments.brightness !== 100 ||
+    imageAdjustments.contrast !== 100 ||
+    imageAdjustments.saturate !== 100 ||
+    imageAdjustments.invert !== 0;
+
   // Get all images for the current review
   const getAllImages = () => {
     if (!currentReview?.images) return [];
@@ -590,6 +622,7 @@ const PlateReviewQueue: React.FC = () => {
                       src={currentReview.images[0].url}
                       alt="Primary plate image"
                       className="w-full h-full object-contain"
+                      style={getImageFilterStyle()}
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                       <ZoomIn className="text-white opacity-0 group-hover:opacity-100 transition-opacity" size={32} />
@@ -598,6 +631,98 @@ const PlateReviewQueue: React.FC = () => {
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-800 text-gray-500">
                     No image available
+                  </div>
+                )}
+              </div>
+
+              {/* Image Adjustment Controls */}
+              <div className="mt-3">
+                <button
+                  onClick={() => setShowImageControls(!showImageControls)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    showImageControls || isImageAdjusted
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  <SunMedium size={16} />
+                  Image Adjustments
+                  {isImageAdjusted && !showImageControls && (
+                    <span className="w-2 h-2 bg-yellow-400 rounded-full" />
+                  )}
+                </button>
+
+                {showImageControls && (
+                  <div className="mt-2 p-3 bg-gray-800 rounded-lg space-y-3">
+                    {/* Brightness */}
+                    <div className="flex items-center gap-3">
+                      <SunMedium size={16} className="text-gray-400 flex-shrink-0" />
+                      <span className="text-xs text-gray-400 w-16">Brightness</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="200"
+                        value={imageAdjustments.brightness}
+                        onChange={(e) => setImageAdjustments(prev => ({ ...prev, brightness: parseInt(e.target.value) }))}
+                        className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <span className="text-xs text-gray-400 w-10 text-right">{imageAdjustments.brightness}%</span>
+                    </div>
+
+                    {/* Contrast */}
+                    <div className="flex items-center gap-3">
+                      <Contrast size={16} className="text-gray-400 flex-shrink-0" />
+                      <span className="text-xs text-gray-400 w-16">Contrast</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="200"
+                        value={imageAdjustments.contrast}
+                        onChange={(e) => setImageAdjustments(prev => ({ ...prev, contrast: parseInt(e.target.value) }))}
+                        className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <span className="text-xs text-gray-400 w-10 text-right">{imageAdjustments.contrast}%</span>
+                    </div>
+
+                    {/* Saturation */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-r from-gray-400 to-blue-500 flex-shrink-0" />
+                      <span className="text-xs text-gray-400 w-16">Saturation</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="200"
+                        value={imageAdjustments.saturate}
+                        onChange={(e) => setImageAdjustments(prev => ({ ...prev, saturate: parseInt(e.target.value) }))}
+                        className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <span className="text-xs text-gray-400 w-10 text-right">{imageAdjustments.saturate}%</span>
+                    </div>
+
+                    {/* Invert */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded bg-gradient-to-r from-white to-black flex-shrink-0" />
+                      <span className="text-xs text-gray-400 w-16">Invert</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={imageAdjustments.invert}
+                        onChange={(e) => setImageAdjustments(prev => ({ ...prev, invert: parseInt(e.target.value) }))}
+                        className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <span className="text-xs text-gray-400 w-10 text-right">{imageAdjustments.invert}%</span>
+                    </div>
+
+                    {/* Reset Button */}
+                    <button
+                      onClick={resetImageAdjustments}
+                      disabled={!isImageAdjusted}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <RotateCcw size={14} />
+                      Reset
+                    </button>
                   </div>
                 )}
               </div>
