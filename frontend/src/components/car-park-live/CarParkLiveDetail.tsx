@@ -11,12 +11,28 @@ import {
   Loader2,
   ChevronDown,
   DoorOpen,
+  Video,
+  Image as ImageIcon,
+  Box,
 } from 'lucide-react';
+import { Go2RTCPlayer } from './Go2RTCPlayer';
+import { CarPark3DView } from './CarPark3DView';
 
 interface LiveOpsCamera {
   id: string;
   name: string;
   protectId: string;
+}
+
+interface CameraStream {
+  id: string;
+  name: string;
+  protectId: string;
+  rtsp?: string;
+  webrtc?: string;
+  hls?: string;
+  mse?: string;
+  go2rtc?: string;
 }
 
 interface LiveOpsAnnouncement {
@@ -57,9 +73,14 @@ export function CarParkLiveDetail({ siteId, onBack }: CarParkLiveDetailProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Camera snapshot state
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'cameras' | '3d'>('cameras');
+
+  // Camera state
   const [cameraTimestamps, setCameraTimestamps] = useState<Record<string, number>>({});
   const [cameraErrors, setCameraErrors] = useState<Record<string, boolean>>({});
+  const [cameraStreams, setCameraStreams] = useState<CameraStream[]>([]);
+  const [viewMode, setViewMode] = useState<'live' | 'snapshot'>('live');
 
   // Announcement state
   const [customMessage, setCustomMessage] = useState('');
@@ -71,13 +92,25 @@ export function CarParkLiveDetail({ siteId, onBack }: CarParkLiveDetailProps) {
   // Barrier state
   const [barrierLoading, setBarrierLoading] = useState(false);
 
-  // Fetch site data
+  // Fetch site data and streams
   const fetchSite = useCallback(async () => {
     try {
-      const response = await fetch(`/api/live-ops/sites/${siteId}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      setSite(data);
+      const [siteResponse, streamsResponse] = await Promise.all([
+        fetch(`/api/live-ops/sites/${siteId}`),
+        fetch(`/api/live-ops/sites/${siteId}/streams`),
+      ]);
+      
+      if (!siteResponse.ok) throw new Error(`HTTP ${siteResponse.status}`);
+      const siteData = await siteResponse.json();
+      setSite(siteData);
+      
+      if (streamsResponse.ok) {
+        const streamsData = await streamsResponse.json();
+        if (streamsData.success && streamsData.streams) {
+          setCameraStreams(streamsData.streams);
+        }
+      }
+      
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch site');
@@ -218,9 +251,35 @@ export function CarParkLiveDetail({ siteId, onBack }: CarParkLiveDetailProps) {
         >
           <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
         </button>
-        <div>
+        <div className="flex-1">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{site.name}</h2>
           <p className="text-gray-500 dark:text-gray-400">Live Operations Dashboard</p>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex items-center gap-1 bg-gray-100 dark:bg-slate-800 rounded-lg p-1">
+          <button
+            onClick={() => setActiveTab('cameras')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'cameras'
+                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <Camera className="w-4 h-4" />
+            Cameras
+          </button>
+          <button
+            onClick={() => setActiveTab('3d')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === '3d'
+                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <Box className="w-4 h-4" />
+            3D View
+          </button>
         </div>
       </div>
 
@@ -242,45 +301,94 @@ export function CarParkLiveDetail({ siteId, onBack }: CarParkLiveDetailProps) {
         </div>
       )}
 
+      {/* 3D View Tab */}
+      {activeTab === '3d' && <CarPark3DView />}
+
+      {/* Cameras Tab */}
+      {activeTab === 'cameras' && (
+        <>
       {/* Camera Grid */}
       <section>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <Camera className="w-5 h-5" />
-          Camera Feeds
-          <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-            (Auto-refresh every {CAMERA_REFRESH_INTERVAL / 1000}s)
-          </span>
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <Camera className="w-5 h-5" />
+            Camera Feeds
+            {viewMode === 'snapshot' && (
+              <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+                (Auto-refresh every {CAMERA_REFRESH_INTERVAL / 1000}s)
+              </span>
+            )}
+          </h3>
+          
+          {/* View mode toggle */}
+          <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-800 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('live')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'live'
+                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <Video className="w-4 h-4" />
+              Live
+            </button>
+            <button
+              onClick={() => setViewMode('snapshot')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'snapshot'
+                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <ImageIcon className="w-4 h-4" />
+              Snapshots
+            </button>
+          </div>
+        </div>
 
         {liveOps?.cameras && liveOps.cameras.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {liveOps.cameras.map((camera) => (
-              <div
-                key={camera.id}
-                className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden"
-              >
-                <div className="aspect-video bg-gray-900 relative">
-                  {cameraErrors[camera.id] ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
-                      <Camera className="w-12 h-12 mb-2 opacity-50" />
-                      <span className="text-sm">Camera unavailable</span>
-                    </div>
-                  ) : (
-                    <img
-                      key={cameraTimestamps[camera.id]}
-                      src={`/api/live-ops/sites/${siteId}/cameras/${camera.id}/snapshot?t=${cameraTimestamps[camera.id] || Date.now()}`}
-                      alt={camera.name}
-                      className="w-full h-full object-cover"
-                      onError={() => handleCameraError(camera.id)}
-                      onLoad={() => handleCameraLoad(camera.id)}
+            {liveOps.cameras.map((camera) => {
+              const stream = cameraStreams.find((s) => s.id === camera.id);
+              const streamName = stream?.mse?.match(/src=([^&]+)/)?.[1];
+              
+              return (
+                <div
+                  key={camera.id}
+                  className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden"
+                >
+                  {viewMode === 'live' && streamName ? (
+                    <Go2RTCPlayer
+                      streamName={streamName}
+                      cameraName={camera.name}
+                      snapshotUrl={`/api/live-ops/sites/${siteId}/cameras/${camera.id}/snapshot`}
                     />
+                  ) : (
+                    <div className="aspect-video bg-gray-900 relative">
+                      {cameraErrors[camera.id] ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                          <Camera className="w-12 h-12 mb-2 opacity-50" />
+                          <span className="text-sm">Camera unavailable</span>
+                        </div>
+                      ) : (
+                        <img
+                          key={cameraTimestamps[camera.id]}
+                          src={`/api/live-ops/sites/${siteId}/cameras/${camera.id}/snapshot?t=${cameraTimestamps[camera.id] || Date.now()}`}
+                          alt={camera.name}
+                          className="w-full h-full object-cover"
+                          onError={() => handleCameraError(camera.id)}
+                          onLoad={() => handleCameraLoad(camera.id)}
+                        />
+                      )}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+                        <span className="text-white text-sm font-medium">{camera.name}</span>
+                      </div>
+                    </div>
                   )}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-                    <span className="text-white text-sm font-medium">{camera.name}</span>
-                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-slate-800/50 rounded-xl">
@@ -454,6 +562,8 @@ export function CarParkLiveDetail({ siteId, onBack }: CarParkLiveDetailProps) {
             </div>
           </div>
         </section>
+      )}
+        </>
       )}
     </div>
   );
