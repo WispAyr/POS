@@ -151,9 +151,10 @@ export class OperationsDashboardService {
     ).length;
     const exits = todayMovements.filter((m) => m.direction === 'EXIT').length;
 
-    // Get today's violations (enforcement candidates)
+    // Get today's violations (enforcement candidates) for this site
     const violations = await this.decisionRepo.count({
       where: {
+        siteId,
         outcome: DecisionOutcome.ENFORCEMENT_CANDIDATE,
         createdAt: MoreThanOrEqual(todayStart),
       },

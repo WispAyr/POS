@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react';
+import { RefreshCw, AlertTriangle, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { LiveClock } from './LiveClock';
 import { SiteCard } from './SiteCard';
 import { CameraFeed } from './CameraFeed';
@@ -52,6 +52,7 @@ export function OperationsDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [hideEmptySites, setHideEmptySites] = useState(true);
 
   const fetchData = useCallback(async () => {
     try {
@@ -76,6 +77,13 @@ export function OperationsDashboard() {
     const interval = setInterval(fetchData, POLL_INTERVAL);
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  // Filter sites based on activity
+  const filteredSites = data?.sites.filter((site) => {
+    if (!hideEmptySites) return true;
+    const { entries, exits, violations } = site.stats.today;
+    return entries > 0 || exits > 0 || violations > 0;
+  }) || [];
 
   // Get all cameras across all sites for the camera feed section
   const allCameras = data?.sites.flatMap((site) =>
@@ -147,11 +155,34 @@ export function OperationsDashboard() {
         <>
           {/* Site Cards Grid */}
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Sites
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Sites
+              </h2>
+              <button
+                onClick={() => setHideEmptySites(!hideEmptySites)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  hideEmptySites
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                    : 'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-400'
+                }`}
+                title={hideEmptySites ? 'Showing sites with activity only' : 'Showing all sites'}
+              >
+                {hideEmptySites ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+                {hideEmptySites ? 'Hide Empty' : 'Show All'}
+                {hideEmptySites && data.sites.length !== filteredSites.length && (
+                  <span className="text-xs opacity-75">
+                    ({filteredSites.length}/{data.sites.length})
+                  </span>
+                )}
+              </button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {data.sites.map((site) => (
+              {filteredSites.map((site) => (
                 <SiteCard
                   key={site.siteId}
                   siteName={site.siteName}
@@ -163,9 +194,11 @@ export function OperationsDashboard() {
                   lastSync={site.health.lastSync}
                 />
               ))}
-              {data.sites.length === 0 && (
+              {filteredSites.length === 0 && (
                 <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
-                  No active sites configured
+                  {hideEmptySites && data.sites.length > 0
+                    ? 'No sites with activity today'
+                    : 'No active sites configured'}
                 </div>
               )}
             </div>
