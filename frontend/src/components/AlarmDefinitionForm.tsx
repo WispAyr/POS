@@ -11,6 +11,9 @@ import {
   Info,
   Clock,
   Settings,
+  Volume2,
+  Globe,
+  Send,
 } from 'lucide-react';
 
 interface AlarmDefinition {
@@ -31,6 +34,7 @@ interface AlarmDefinition {
   cronSchedule?: string;
   enabled: boolean;
   notificationChannels: string[];
+  actions?: AlarmAction[];
 }
 
 const ALARM_TYPES = [
@@ -54,6 +58,20 @@ const CHANNELS = [
   { value: 'SMS', label: 'SMS' },
 ];
 
+const ACTION_TYPES = [
+  { value: 'TELEGRAM', label: 'Telegram Message', icon: Send },
+  { value: 'WEBHOOK', label: 'Webhook Call', icon: Globe },
+  { value: 'ANNOUNCEMENT', label: 'Speaker Announcement', icon: Volume2 },
+];
+
+interface AlarmAction {
+  name: string;
+  type: 'TELEGRAM' | 'WEBHOOK' | 'ANNOUNCEMENT';
+  config: Record<string, any>;
+  enabled: boolean;
+  description?: string;
+}
+
 export function AlarmDefinitionForm() {
   const [definitions, setDefinitions] = useState<AlarmDefinition[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +83,7 @@ export function AlarmDefinitionForm() {
     enabled: true,
     notificationChannels: ['IN_APP'],
     conditions: {},
+    actions: [],
   });
   const [saving, setSaving] = useState(false);
 
@@ -128,9 +147,52 @@ export function AlarmDefinitionForm() {
       enabled: true,
       notificationChannels: ['IN_APP'],
       conditions: {},
+      actions: [],
     });
     setEditingId(null);
     setShowForm(false);
+  };
+
+  const addAction = (type: AlarmAction['type']) => {
+    const defaultConfigs: Record<string, Record<string, any>> = {
+      TELEGRAM: { messageTemplate: 'Alarm triggered: {{alarm.name}} - {{alarm.type}}' },
+      WEBHOOK: { url: '', method: 'POST', headers: {} },
+      ANNOUNCEMENT: { message: 'Attention: {{alarm.name}} alarm triggered', volume: 50 },
+    };
+    
+    const newAction: AlarmAction = {
+      name: `${type.toLowerCase()}_action_${(formData.actions?.length || 0) + 1}`,
+      type,
+      config: defaultConfigs[type] || {},
+      enabled: true,
+    };
+    
+    setFormData({
+      ...formData,
+      actions: [...(formData.actions || []), newAction],
+    });
+  };
+
+  const updateAction = (index: number, updates: Partial<AlarmAction>) => {
+    const actions = [...(formData.actions || [])];
+    actions[index] = { ...actions[index], ...updates };
+    setFormData({ ...formData, actions });
+  };
+
+  const updateActionConfig = (index: number, key: string, value: any) => {
+    const actions = [...(formData.actions || [])];
+    actions[index] = {
+      ...actions[index],
+      config: { ...actions[index].config, [key]: value },
+    };
+    setFormData({ ...formData, actions });
+  };
+
+  const removeAction = (index: number) => {
+    setFormData({
+      ...formData,
+      actions: formData.actions?.filter((_, i) => i !== index),
+    });
   };
 
   const toggleChannel = (channel: string) => {
@@ -531,6 +593,131 @@ export function AlarmDefinitionForm() {
                     </label>
                   ))}
                 </div>
+              </div>
+
+              {/* Actions */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Automated Actions
+                  </label>
+                  <div className="flex gap-1">
+                    {ACTION_TYPES.map((actionType) => (
+                      <button
+                        key={actionType.value}
+                        type="button"
+                        onClick={() => addAction(actionType.value as AlarmAction['type'])}
+                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
+                        title={`Add ${actionType.label}`}
+                      >
+                        <actionType.icon className="w-4 h-4" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                {formData.actions && formData.actions.length > 0 ? (
+                  <div className="space-y-3">
+                    {formData.actions.map((action, index) => (
+                      <div
+                        key={index}
+                        className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            {action.type === 'TELEGRAM' && <Send className="w-4 h-4 text-blue-500" />}
+                            {action.type === 'WEBHOOK' && <Globe className="w-4 h-4 text-green-500" />}
+                            {action.type === 'ANNOUNCEMENT' && <Volume2 className="w-4 h-4 text-purple-500" />}
+                            <input
+                              type="text"
+                              value={action.name}
+                              onChange={(e) => updateAction(index, { name: e.target.value })}
+                              className="text-sm font-medium bg-transparent border-0 p-0 text-gray-700 dark:text-gray-300 focus:ring-0"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className="flex items-center gap-1">
+                              <input
+                                type="checkbox"
+                                checked={action.enabled}
+                                onChange={(e) => updateAction(index, { enabled: e.target.checked })}
+                                className="rounded border-gray-300 dark:border-slate-600 text-blue-600"
+                              />
+                              <span className="text-xs text-gray-500">On</span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => removeAction(index)}
+                              className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* Action-specific config */}
+                        {action.type === 'TELEGRAM' && (
+                          <input
+                            type="text"
+                            value={action.config.messageTemplate || ''}
+                            onChange={(e) => updateActionConfig(index, 'messageTemplate', e.target.value)}
+                            placeholder="Message template (use {{alarm.name}}, {{alarm.type}}, etc.)"
+                            className="w-full text-sm px-2 py-1.5 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded"
+                          />
+                        )}
+                        
+                        {action.type === 'WEBHOOK' && (
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              value={action.config.url || ''}
+                              onChange={(e) => updateActionConfig(index, 'url', e.target.value)}
+                              placeholder="Webhook URL"
+                              className="w-full text-sm px-2 py-1.5 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded"
+                            />
+                            <select
+                              value={action.config.method || 'POST'}
+                              onChange={(e) => updateActionConfig(index, 'method', e.target.value)}
+                              className="text-sm px-2 py-1.5 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded"
+                            >
+                              <option value="POST">POST</option>
+                              <option value="PUT">PUT</option>
+                              <option value="GET">GET</option>
+                            </select>
+                          </div>
+                        )}
+                        
+                        {action.type === 'ANNOUNCEMENT' && (
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              value={action.config.message || ''}
+                              onChange={(e) => updateActionConfig(index, 'message', e.target.value)}
+                              placeholder="Announcement message"
+                              className="w-full text-sm px-2 py-1.5 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded"
+                            />
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500">Volume:</span>
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={action.config.volume || 50}
+                                onChange={(e) => updateActionConfig(index, 'volume', parseInt(e.target.value))}
+                                className="flex-1"
+                              />
+                              <span className="text-xs text-gray-500 w-8">{action.config.volume || 50}%</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 dark:text-gray-500 italic">
+                    No actions configured. Click an icon above to add.
+                  </p>
+                )}
               </div>
 
               {/* Enabled */}
