@@ -19,6 +19,7 @@ import { VrmSearch } from './components/VrmSearch';
 import { SystemMonitorView } from './components/SystemMonitorView';
 import { OperationsDashboard } from './components/dashboard';
 import { ScheduledNotificationDashboard } from './components/notifications/ScheduledNotificationDashboard';
+import { CarParkLiveView } from './components/car-park-live';
 import { Sidebar, MobileNav, FullscreenButton } from './components/layout';
 import { Sun, Moon, Search } from 'lucide-react';
 
@@ -26,6 +27,7 @@ import { Sun, Moon, Search } from 'lucide-react';
 const VIEW_TITLES: Record<string, { title: string; subtitle: string }> = {
   dashboard: { title: 'Dashboard', subtitle: 'Real-time parking operations overview' },
   'operations-dashboard': { title: 'Operations Dashboard', subtitle: 'Real-time site monitoring' },
+  'car-park-live': { title: 'Car Park Live', subtitle: 'Live camera feeds, announcements, and controls' },
   'vrm-search': { title: 'VRM Search', subtitle: 'Search vehicle registration history' },
   sites: { title: 'Sites Management', subtitle: 'Configure and manage parking sites' },
   'plate-review': { title: 'Plate Review Queue', subtitle: 'Review plates requiring verification' },
@@ -181,6 +183,7 @@ function App() {
           {currentView === 'payment-providers' && <PaymentProviderConfig />}
           {currentView === 'customer-export' && <CustomerExportDashboard />}
           {currentView === 'system-monitor' && <SystemMonitorView />}
+          {currentView === 'car-park-live' && <CarParkLiveView />}
           {currentView === 'settings' && <SettingsView />}
         </div>
       </main>

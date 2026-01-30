@@ -20,6 +20,7 @@ import { SearchModule } from './search/search.module';
 import { SystemMonitorModule } from './system-monitor/system-monitor.module';
 import { OperationsDashboardModule } from './operations-dashboard/operations-dashboard.module';
 import { ScheduledNotificationsModule } from './scheduled-notifications/scheduled-notifications.module';
+import { LiveOpsModule } from './live-ops/live-ops.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -60,6 +61,7 @@ import { AppController } from './app.controller';
     SystemMonitorModule,
     OperationsDashboardModule,
     ScheduledNotificationsModule,
+    LiveOpsModule,
   ],
   controllers: [AppController],
 })

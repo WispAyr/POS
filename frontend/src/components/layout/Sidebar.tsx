@@ -21,6 +21,7 @@ import {
   PanelLeft,
   Monitor,
   Send,
+  Radio,
 } from 'lucide-react';
 import { SidebarGroup } from './SidebarGroup';
 
@@ -61,6 +62,7 @@ const NAV_GROUPS = [
     title: 'Monitoring',
     key: 'monitoring',
     items: [
+      { icon: Radio, label: 'Car Park Live', viewId: 'car-park-live' },
       { icon: Bell, label: 'Alarms', viewId: 'alarms' },
       { icon: Send, label: 'Notifications', viewId: 'scheduled-notifications' },
       { icon: Activity, label: 'System Monitor', viewId: 'system-monitor' },
