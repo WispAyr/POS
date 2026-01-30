@@ -204,12 +204,19 @@ export class AiController {
   /**
    * Analyze a plate image from URL to extract registration
    * Used by Plate Review for difficult-to-read plates
+   * Supports 'hailo' (LPR model) and 'claude' (vision LLM) providers
    */
   @Post('analyze-plate')
   @HttpCode(HttpStatus.OK)
   async analyzePlateImage(
-    @Body() body: { imageUrl: string; context?: { originalVrm?: string; confidence?: number } },
+    @Body() body: { 
+      imageUrl: string; 
+      provider?: 'hailo' | 'claude';
+      context?: { originalVrm?: string; confidence?: number };
+    },
   ) {
+    const provider = body.provider || 'hailo';
+    
     try {
       // Fetch the image
       const response = await fetch(body.imageUrl);
@@ -219,42 +226,153 @@ export class AiController {
       
       const buffer = Buffer.from(await response.arrayBuffer());
       
-      // Send to Hailo for analysis
-      const result = await this.hailoService.analyzeBuffer(buffer, 'yolov8s');
-      
-      if (!result.success) {
-        return { success: false, error: result.error || 'Analysis failed' };
+      if (provider === 'claude') {
+        return this.analyzeWithClaude(buffer, body.context);
+      } else {
+        return this.analyzeWithHailoLPR(buffer, body.context);
       }
-
-      // Look for license plate detections
-      const plateDetections = result.detections?.filter(
-        (d) => d.label?.toLowerCase().includes('plate') || 
-               d.label?.toLowerCase().includes('license') ||
-               d.label?.toLowerCase().includes('car') ||
-               d.label?.toLowerCase().includes('vehicle')
-      ) || [];
-
-      // If we have detections with text, return the best one
-      if (result.detections && result.detections.length > 0) {
-        // For now, return the raw detections - in future could add OCR
-        return {
-          success: true,
-          suggestedVrm: body.context?.originalVrm || 'REVIEW_MANUALLY',
-          detections: result.detections,
-          confidence: result.detections[0]?.confidence || 0,
-          message: `Detected ${result.detections.length} objects. Manual review recommended.`,
-        };
-      }
-
-      return {
-        success: false,
-        error: 'No plate detected in image',
-        suggestedVrm: null,
-      };
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
+        suggestedVrm: null,
+      };
+    }
+  }
+
+  /**
+   * Analyze plate using Hailo LPR models
+   */
+  private async analyzeWithHailoLPR(
+    buffer: Buffer,
+    context?: { originalVrm?: string; confidence?: number },
+  ) {
+    try {
+      // First detect the plate region using tiny_yolov4_license_plates
+      const detectionResult = await this.hailoService.analyzeBuffer(
+        buffer, 
+        'tiny_yolov4_license_plates_h8l'
+      );
+      
+      if (!detectionResult.success) {
+        // Fallback to general detection
+        const fallbackResult = await this.hailoService.analyzeBuffer(buffer, 'yolov8s');
+        return {
+          success: false,
+          error: 'LPR model not available, using general detection',
+          detections: fallbackResult.detections,
+          suggestedVrm: context?.originalVrm || 'REVIEW_MANUALLY',
+        };
+      }
+
+      // Then run OCR with lprnet on detected plate regions
+      const ocrResult = await this.hailoService.analyzeBuffer(buffer, 'lprnet_h8l');
+      
+      if (ocrResult.success && ocrResult.text) {
+        return {
+          success: true,
+          suggestedVrm: ocrResult.text.toUpperCase().replace(/[^A-Z0-9]/g, ''),
+          confidence: ocrResult.confidence || 0,
+          provider: 'hailo',
+          detections: detectionResult.detections,
+        };
+      }
+
+      return {
+        success: true,
+        suggestedVrm: context?.originalVrm || 'REVIEW_MANUALLY',
+        detections: detectionResult.detections,
+        message: 'Plate detected but OCR unclear',
+        provider: 'hailo',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Hailo LPR failed',
+        suggestedVrm: null,
+      };
+    }
+  }
+
+  /**
+   * Analyze plate using Claude Vision
+   */
+  private async analyzeWithClaude(
+    buffer: Buffer,
+    context?: { originalVrm?: string; confidence?: number },
+  ) {
+    try {
+      const base64Image = buffer.toString('base64');
+      const mimeType = 'image/jpeg';
+      
+      // Call Claude API for vision analysis
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) {
+        return {
+          success: false,
+          error: 'Claude API key not configured',
+          suggestedVrm: null,
+        };
+      }
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 100,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'image',
+                  source: {
+                    type: 'base64',
+                    media_type: mimeType,
+                    data: base64Image,
+                  },
+                },
+                {
+                  type: 'text',
+                  text: `Read the vehicle registration plate in this image. Return ONLY the registration number in uppercase with no spaces or punctuation. If you cannot read it clearly, respond with your best guess followed by a ? character. The original OCR read: ${context?.originalVrm || 'unknown'}`,
+                },
+              ],
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return {
+          success: false,
+          error: `Claude API error: ${response.status}`,
+          suggestedVrm: null,
+        };
+      }
+
+      const result = await response.json();
+      const text = result.content?.[0]?.text?.trim() || '';
+      
+      // Clean up the response
+      const cleanVrm = text.replace(/[^A-Z0-9?]/gi, '').toUpperCase();
+      
+      return {
+        success: true,
+        suggestedVrm: cleanVrm || 'UNREADABLE',
+        confidence: cleanVrm.includes('?') ? 0.5 : 0.9,
+        provider: 'claude',
+        rawResponse: text,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Claude analysis failed',
         suggestedVrm: null,
       };
     }

@@ -437,8 +437,8 @@ const PlateReviewQueue: React.FC = () => {
     imageAdjustments.sharpen !== 0 ||
     imageAdjustments.threshold !== 0;
 
-  // AI plate analysis
-  const analyzeWithAI = async () => {
+  // AI plate analysis - Hailo LPR
+  const analyzeWithHailo = async () => {
     if (!currentReview?.images?.[0]?.url) return;
     
     setAiAnalyzing(true);
@@ -447,6 +447,7 @@ const PlateReviewQueue: React.FC = () => {
     try {
       const response = await axios.post('/api/ai/analyze-plate', {
         imageUrl: currentReview.images[0].url,
+        provider: 'hailo',
         context: {
           originalVrm: currentReview.originalVrm,
           confidence: currentReview.confidence,
@@ -455,7 +456,33 @@ const PlateReviewQueue: React.FC = () => {
       
       setAiResult(response.data.suggestedVrm || response.data.result || 'No result');
     } catch (error) {
-      console.error('AI analysis failed:', error);
+      console.error('Hailo analysis failed:', error);
+      setAiResult('Analysis failed');
+    } finally {
+      setAiAnalyzing(false);
+    }
+  };
+
+  // AI plate analysis - Claude Vision
+  const analyzeWithClaude = async () => {
+    if (!currentReview?.images?.[0]?.url) return;
+    
+    setAiAnalyzing(true);
+    setAiResult(null);
+    
+    try {
+      const response = await axios.post('/api/ai/analyze-plate', {
+        imageUrl: currentReview.images[0].url,
+        provider: 'claude',
+        context: {
+          originalVrm: currentReview.originalVrm,
+          confidence: currentReview.confidence,
+        },
+      });
+      
+      setAiResult(response.data.suggestedVrm || response.data.result || 'No result');
+    } catch (error) {
+      console.error('Claude analysis failed:', error);
       setAiResult('Analysis failed');
     } finally {
       setAiAnalyzing(false);
@@ -834,16 +861,31 @@ const PlateReviewQueue: React.FC = () => {
                       </button>
                       
                       <button
-                        onClick={analyzeWithAI}
+                        onClick={analyzeWithHailo}
                         disabled={aiAnalyzing || !currentReview?.images?.[0]}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        title="Use Hailo LPR model"
                       >
                         {aiAnalyzing ? (
                           <Loader2 size={14} className="animate-spin" />
                         ) : (
                           <Sparkles size={14} />
                         )}
-                        {aiAnalyzing ? 'Analyzing...' : 'AI Read'}
+                        Hailo LPR
+                      </button>
+                      
+                      <button
+                        onClick={analyzeWithClaude}
+                        disabled={aiAnalyzing || !currentReview?.images?.[0]}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        title="Use Claude Vision for OCR"
+                      >
+                        {aiAnalyzing ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Sparkles size={14} />
+                        )}
+                        Claude
                       </button>
                     </div>
 
