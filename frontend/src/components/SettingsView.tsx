@@ -10,6 +10,7 @@ import {
   Server,
   HardDrive,
 } from 'lucide-react';
+import { AiReviewSection } from './AiReviewSection';
 
 interface SyncStatus {
   isRunning: boolean;
@@ -509,7 +510,11 @@ export function SettingsView() {
               />
             </button>
           </div>
+
         </div>
+
+        {/* AI Review Section */}
+        <AiReviewSection />
 
         <div className="pt-4 border-t border-gray-100 dark:border-slate-800 mt-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">

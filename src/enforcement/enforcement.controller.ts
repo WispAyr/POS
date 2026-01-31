@@ -178,4 +178,14 @@ export class EnforcementController {
   async reevaluateDecision(@Param('id') id: string) {
     return this.reevaluationService.reevaluateDecision(id);
   }
+
+  /**
+   * Evaluate orphan sessions - completed sessions that never got a decision.
+   * This fixes gaps where sessions completed but the rule engine didn't run.
+   */
+  @Post('evaluate-orphans')
+  async evaluateOrphanSessions(@Query('limit') limitStr?: string) {
+    const limit = limitStr ? parseInt(limitStr, 10) : 500;
+    return this.enforcementService.evaluateOrphanSessions(limit);
+  }
 }

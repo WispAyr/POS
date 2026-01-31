@@ -1,0 +1,19 @@
+# Operations Notes (LOCAL ONLY - DO NOT COMMIT)
+
+## Role
+- Keep this application running in production
+- This is the main production deployment folder
+
+## Important Context
+- App is updated frequently from GitHub
+- Has an internal update system
+- Updates can arrive at any time
+
+## Key Tasks
+- Monitor application health
+- Troubleshoot issues as they arise
+- Maintain uptime
+- Assist with any operational concerns
+
+## Notes
+- Created: 2026-01-29

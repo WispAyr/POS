@@ -40,7 +40,8 @@ export class AnprFolderImportService {
     kent_wharf: 'KWF01',
     kentwharf: 'KWF01',
     radisson: 'RDB01',
-    kyle: 'KMS01',
+    kyle_rise_ayr: 'KCS01', // Kyle Surface (Hikvision ANPR)
+    kyle: 'KCS01', // Default Kyle to Surface
     bridlington: 'BPD01',
     coastal: 'CPZ01',
     yibby: 'YIB01',

@@ -31,6 +31,14 @@ class BulkDiscardDto {
   reason: string;
 }
 
+class BulkDiscardByReasonDto {
+  userId: string;
+  suspicionReason: string; // e.g., 'HAILO_NO_VEHICLE', 'UNKNOWN_PLATE'
+  discardReason: string;
+  siteId?: string;
+  limit?: number;
+}
+
 @Controller('plate-review')
 export class PlateReviewController {
   constructor(
@@ -122,6 +130,32 @@ export class PlateReviewController {
   @HttpCode(HttpStatus.OK)
   async bulkDiscard(@Body() dto: BulkDiscardDto) {
     return this.plateReviewService.bulkDiscard(dto.reviewIds, dto.userId, dto.reason);
+  }
+
+  /**
+   * POST /plate-review/bulk-discard-by-reason
+   * Bulk discards reviews matching a specific suspicion reason
+   * Useful for clearing out HAILO_NO_VEHICLE, UNKNOWN_PLATE, etc.
+   */
+  @Post('bulk-discard-by-reason')
+  @HttpCode(HttpStatus.OK)
+  async bulkDiscardByReason(@Body() dto: BulkDiscardByReasonDto) {
+    return this.plateReviewService.bulkDiscardByReason(
+      dto.suspicionReason,
+      dto.userId,
+      dto.discardReason,
+      dto.siteId,
+      dto.limit || 100,
+    );
+  }
+
+  /**
+   * GET /plate-review/suspicion-reasons
+   * Gets a summary of pending reviews grouped by suspicion reason
+   */
+  @Get('stats/by-reason')
+  async getByReasonStats(@Query('siteId') siteId?: string) {
+    return this.plateReviewService.getReviewsByReasonStats(siteId);
   }
 
   /**

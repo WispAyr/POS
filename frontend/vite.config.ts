@@ -31,6 +31,13 @@ export default defineConfig({
       '.parkwise.noc', // Allow all subdomains
     ],
     proxy: {
+      // go2rtc streaming (must be before /api)
+      '/go2rtc': {
+        target: 'http://localhost:1984',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/go2rtc/, ''),
+        ws: true,
+      },
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,

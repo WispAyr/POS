@@ -80,7 +80,8 @@ export function PaymentTrackingView() {
 
   const loadSites = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/sites`);
+      // Only load sites that have payment provider mappings
+      const response = await fetch(`${API_BASE}/api/sites/with-payments`);
       if (response.ok) {
         const data = await response.json();
         setSites(data);

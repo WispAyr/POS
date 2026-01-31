@@ -140,17 +140,45 @@ export class LiveOpsService {
   }
 
   /**
-   * Fetch snapshot from UniFi Protect NVR using curl (more reliable)
+   * Fetch snapshot from go2rtc (preferred - no auth needed, uses RTSP)
+   * Falls back to UniFi Protect API if go2rtc stream not available
    */
   private async fetchProtectSnapshot(
     cameraId: string,
   ): Promise<CameraSnapshotResult> {
+    const fs = await import('fs');
+    
+    // Try go2rtc first (no auth, much faster)
+    const streamName = this.cameraStreamNames[cameraId];
+    if (streamName) {
+      try {
+        const snapshotFile = `/tmp/snapshot-${cameraId}-${Date.now()}.jpg`;
+        const go2rtcCmd = `curl -s "http://${this.go2rtcHost}/api/frame.jpeg?src=${streamName}" -o ${snapshotFile} --max-time 5`;
+        
+        await execAsync(go2rtcCmd);
+        
+        const stats = fs.statSync(snapshotFile);
+        if (stats.size > 1000) {  // Valid image should be > 1KB
+          const data = fs.readFileSync(snapshotFile);
+          try { fs.unlinkSync(snapshotFile); } catch {}
+          return {
+            success: true,
+            contentType: 'image/jpeg',
+            data,
+          };
+        }
+        try { fs.unlinkSync(snapshotFile); } catch {}
+      } catch (error) {
+        this.logger.warn(`go2rtc snapshot failed for ${streamName}, falling back to Protect API`);
+      }
+    }
+    
+    // Fallback to Protect API (with rate limit risk)
     try {
-      const fs = await import('fs');
       const cookieFile = '/tmp/protect-cookies.txt';
       const snapshotFile = `/tmp/snapshot-${cameraId}-${Date.now()}.jpg`;
 
-      // Step 1: Authenticate and get cookies
+      // Authenticate
       const authCmd = `curl -sk -X POST "https://${this.nvrHost}/api/auth/login" ` +
         `-H "Content-Type: application/json" ` +
         `-d '{"username":"${this.nvrUsername}","password":"${this.nvrPassword}"}' ` +
@@ -158,12 +186,12 @@ export class LiveOpsService {
       
       await execAsync(authCmd);
 
-      // Step 2: Extract CSRF token
+      // Extract CSRF token
       const headers = fs.readFileSync('/tmp/protect-headers.txt', 'utf8');
       const csrfMatch = headers.match(/x-csrf-token:\s*([^\r\n]+)/i);
       const csrf = csrfMatch ? csrfMatch[1].trim() : '';
 
-      // Step 3: Fetch snapshot
+      // Fetch snapshot
       const snapshotCmd = `curl -sk "https://${this.nvrHost}/proxy/protect/api/cameras/${cameraId}/snapshot?ts=${Date.now()}" ` +
         `-H "X-CSRF-Token: ${csrf}" ` +
         `-b ${cookieFile} ` +
@@ -171,10 +199,7 @@ export class LiveOpsService {
       
       await execAsync(snapshotCmd);
 
-      // Read snapshot file
       const data = fs.readFileSync(snapshotFile);
-      
-      // Cleanup
       try { fs.unlinkSync(snapshotFile); } catch {}
 
       return {
@@ -193,12 +218,20 @@ export class LiveOpsService {
   private readonly go2rtcHost = 'localhost:1984';
   
   // Map UniFi Protect camera IDs to go2rtc stream names
-  // NOTE: RTSP must be enabled for each camera in UniFi Protect UI
-  // Currently only 'ramp' has RTSP enabled - others fall back to snapshots
+  // All Kyle Rise cameras are mapped - go2rtc handles RTSP from NVR
   private readonly cameraStreamNames: Record<string, string> = {
-    // '692dd5480096ea03e4000423': 'kyle-rise-front',  // Needs RTSP enabled in Protect
-    // '692dd54800e1ea03e4000424': 'kyle-rise-rear',   // Needs RTSP enabled in Protect
-    '692dd5480117ea03e4000426': 'kyle-rise-ramp',     // RTSP enabled, alias: Drl4uzQfqf2X8dfz
+    // Kyle Rise Multi-Storey
+    '692dd5480096ea03e4000423': 'kyle-rise-front',
+    '692dd54800e1ea03e4000424': 'kyle-rise-rear',
+    '692dd5480117ea03e4000426': 'kyle-rise-ramp',
+    // Kyle Surface
+    '692dd548013cea03e4000427': 'kyle-rise-ptz',      // G6 PTZ Surface
+    '692dd548015eea03e4000428': 'kyle-surface-rear',  // Surface Rear Pod
+    // Hikvision ANPR (Kyle Surface)
+    '692ddc810008ea03e4003fa8': 'kyle-surface-anpr',
+    // Greenford
+    '6969180c004db703e4001742': 'greenford-overview',
+    // Radisson Blu (remote site - via Starlink VPN, to be added)
   };
 
   /**

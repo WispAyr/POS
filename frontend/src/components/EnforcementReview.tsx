@@ -14,8 +14,28 @@ import {
   Filter,
   Calendar,
   Building2,
+  ActivitySquare,
+  AlertTriangle,
+  CreditCard,
+  ShieldCheck,
+  ShieldX,
+  Banknote,
 } from 'lucide-react';
 import { ImageWithLoader } from './ImageWithLoader';
+import { AiReviewButton } from './AiReviewButton';
+
+interface PaymentInfo {
+  startTime: string;
+  expiryTime: string;
+  amount: number;
+  source: string;
+}
+
+interface RecentActivity {
+  type: 'session' | 'payment' | 'decision' | 'permit';
+  timestamp: string;
+  details: string;
+}
 
 interface Decision {
   id: string;
@@ -30,6 +50,27 @@ interface Decision {
   metadata?: {
     entryImages?: { url: string; type: string }[];
     exitImages?: { url: string; type: string }[];
+  };
+  verifications?: {
+    permitChecked: boolean;
+    permitFound: boolean;
+    permitDetails?: string;
+    paymentChecked: boolean;
+    paymentFound: boolean;
+    paymentsCount: number;
+    paymentDetails?: string;
+    siteEnforcementEnabled: boolean;
+  };
+  auditSummary?: {
+    previousSessionsAtSite: number;
+    previousDecisionsAtSite: {
+      total: number;
+      approved: number;
+      declined: number;
+      autoResolved: number;
+    };
+    paymentsAtSite: PaymentInfo[];
+    recentActivity: RecentActivity[];
   };
 }
 
@@ -62,6 +103,19 @@ interface VehicleMarker {
   createdAt: string;
 }
 
+interface AuditLog {
+  id: string;
+  entityType: string;
+  entityId: string;
+  action: string;
+  actor: string;
+  actorType?: string;
+  timestamp: string;
+  details: any;
+  vrm?: string;
+  siteId?: string;
+}
+
 export function EnforcementReview() {
   const [queue, setQueue] = useState<Decision[]>([]);
   const [currentDecision, setCurrentDecision] = useState<Decision | null>(null);
@@ -83,6 +137,8 @@ export function EnforcementReview() {
   );
   const [vehicleNotes, setVehicleNotes] = useState<VehicleNote[]>([]);
   const [vehicleMarkers, setVehicleMarkers] = useState<VehicleMarker[]>([]);
+  const [vehicleAudits, setVehicleAudits] = useState<AuditLog[]>([]);
+  const [auditsLoading, setAuditsLoading] = useState(false);
 
   // Notes
   const [decisionNote, setDecisionNote] = useState('');
@@ -94,6 +150,7 @@ export function EnforcementReview() {
   // AbortController refs for request cancellation
   const queueAbortRef = useRef<AbortController | null>(null);
   const vehicleAbortRef = useRef<AbortController | null>(null);
+  const auditAbortRef = useRef<AbortController | null>(null);
 
   // Fetch sites
   const fetchSites = async () => {
@@ -186,6 +243,43 @@ export function EnforcementReview() {
     }
   }, []);
 
+  // Fetch audit trail for vehicle within PCN timespan at the site
+  const fetchVehicleAudits = useCallback(async (vrm: string, siteId: string, entryTime?: string, exitTime?: string) => {
+    // Cancel any pending request
+    if (auditAbortRef.current) {
+      auditAbortRef.current.abort();
+    }
+    auditAbortRef.current = new AbortController();
+
+    setAuditsLoading(true);
+    try {
+      // Build query params - expand window by 1 hour before entry and 1 hour after exit
+      const params = new URLSearchParams({ vrm, siteId });
+      
+      if (entryTime) {
+        const startDate = new Date(new Date(entryTime).getTime() - 60 * 60 * 1000);
+        params.append('startDate', startDate.toISOString());
+      }
+      if (exitTime) {
+        const endDate = new Date(new Date(exitTime).getTime() + 60 * 60 * 1000);
+        params.append('endDate', endDate.toISOString());
+      }
+      params.append('limit', '50');
+
+      const { data } = await axios.get(`/api/audit/search?${params.toString()}`, {
+        signal: auditAbortRef.current.signal,
+      });
+      setVehicleAudits(data.events || data || []);
+    } catch (error) {
+      if (!axios.isCancel(error)) {
+        console.error('Failed to fetch audit trail', error);
+        setVehicleAudits([]);
+      }
+    } finally {
+      setAuditsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchSites();
     fetchQueue();
@@ -198,8 +292,115 @@ export function EnforcementReview() {
       if (vehicleAbortRef.current) {
         vehicleAbortRef.current.abort();
       }
+      if (auditAbortRef.current) {
+        auditAbortRef.current.abort();
+      }
     };
   }, [fetchQueue]);
+
+  // Keyboard shortcuts for faster review
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in inputs
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      
+      switch (e.key) {
+        case 'a':
+        case 'A':
+          // Approve - handled below via direct call
+          break;
+        case 'r':
+        case 'R':
+          // Reject - handled below via direct call
+          break;
+        case 's':
+        case 'S':
+          // Skip - direct implementation
+          if (currentDecision && queue.length > 0) {
+            const currentIndex = queue.findIndex((d) => d.id === currentDecision.id);
+            const nextDecision = queue[currentIndex + 1] || queue[0];
+            setCurrentDecision(nextDecision);
+          }
+          break;
+        case 'ArrowLeft':
+        case 'j':
+          // Previous - direct implementation
+          if (currentDecision && queue.length > 0) {
+            const currentIndex = queue.findIndex((d) => d.id === currentDecision.id);
+            if (currentIndex > 0) {
+              setCurrentDecision(queue[currentIndex - 1]);
+            }
+          }
+          break;
+        case 'ArrowRight':
+        case 'k':
+          // Next - direct implementation
+          if (currentDecision && queue.length > 0) {
+            const currentIndex = queue.findIndex((d) => d.id === currentDecision.id);
+            if (currentIndex < queue.length - 1) {
+              setCurrentDecision(queue[currentIndex + 1]);
+            }
+          }
+          break;
+        case 'd':
+        case 'D':
+          // Toggle details
+          setShowDetails((prev) => !prev);
+          break;
+        case '?':
+          // Show shortcuts help
+          alert('Keyboard Shortcuts:\nA = Approve\nR = Reject\nS = Skip\n← / J = Previous\n→ / K = Next\nD = Toggle Details');
+          break;
+      }
+    };
+    
+    // Handle A/R separately since they call async handleReview
+    const handleApproveReject = async (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      if (!currentDecision) return;
+      
+      if (e.key === 'a' || e.key === 'A') {
+        try {
+          await axios.post(`/enforcement/review/${currentDecision.id}`, {
+            action: 'APPROVE',
+            notes: 'Keyboard shortcut: APPROVE',
+            operatorId: 'operator-1',
+          });
+          const nextQueue = queue.filter((d) => d.id !== currentDecision.id);
+          setQueue(nextQueue);
+          const currentIndex = queue.findIndex((d) => d.id === currentDecision.id);
+          setCurrentDecision(nextQueue[currentIndex] || nextQueue[0] || null);
+        } catch (error) {
+          console.error('Failed to approve', error);
+        }
+      } else if (e.key === 'r' || e.key === 'R') {
+        try {
+          await axios.post(`/enforcement/review/${currentDecision.id}`, {
+            action: 'REJECT',
+            notes: 'Keyboard shortcut: REJECT',
+            operatorId: 'operator-1',
+          });
+          const nextQueue = queue.filter((d) => d.id !== currentDecision.id);
+          setQueue(nextQueue);
+          const currentIndex = queue.findIndex((d) => d.id === currentDecision.id);
+          setCurrentDecision(nextQueue[currentIndex] || nextQueue[0] || null);
+        } catch (error) {
+          console.error('Failed to reject', error);
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleApproveReject);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleApproveReject);
+    };
+  }, [currentDecision, queue]);
 
   useEffect(() => {
     const active = selectedSites.size > 0 || dateFrom !== '' || dateTo !== '';
@@ -211,11 +412,19 @@ export function EnforcementReview() {
       // Skip fetching for UNKNOWN or empty VRMs
       if (currentDecision.vrm && currentDecision.vrm !== 'UNKNOWN') {
         fetchVehicleData(currentDecision.vrm);
+        // Fetch audits for this vehicle at this site within the PCN timespan
+        fetchVehicleAudits(
+          currentDecision.vrm,
+          currentDecision.siteId,
+          currentDecision.entryTime,
+          currentDecision.exitTime
+        );
       } else {
         // Reset vehicle data for unknown VRMs
         setVehicleHistory(null);
         setVehicleNotes([]);
         setVehicleMarkers([]);
+        setVehicleAudits([]);
       }
       setDecisionNote('');
       setShowDetails(false);
@@ -416,7 +625,9 @@ export function EnforcementReview() {
                         ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                         : decision.reason === 'OVERSTAY'
                           ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
-                          : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+                          : decision.reason === 'UNAUTHORISED_PARKING'
+                            ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400'
+                            : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
                     }`}
                   >
                     {decision.reason.replace(/_/g, ' ')}
@@ -616,6 +827,12 @@ export function EnforcementReview() {
             >
               {showDetails ? 'Hide Details' : 'Show Details'}
             </button>
+            <AiReviewButton 
+              context="enforcement" 
+              entityId={currentDecision.id} 
+              vrm={currentDecision.vrm}
+              siteId={currentDecision.siteId}
+            />
           </div>
         </div>
 
@@ -685,72 +902,244 @@ export function EnforcementReview() {
         {/* Details Panel (Collapsible) */}
         {showDetails && (
           <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-gray-200 dark:border-slate-800 p-4 mb-4 overflow-y-auto flex-1">
-            <div className="grid grid-cols-3 gap-4 mb-4">
+            
+            {/* VIOLATION JUSTIFICATION - Primary Focus */}
+            <div className={`p-4 rounded-lg mb-4 border-2 ${
+              currentDecision.reason === 'OVERSTAY' 
+                ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700'
+                : currentDecision.reason === 'UNAUTHORISED_PARKING'
+                  ? 'bg-violet-50 dark:bg-violet-900/20 border-violet-300 dark:border-violet-700'
+                  : 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700'
+            }`}>
+              <h5 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                <AlertTriangle className={`w-5 h-5 ${
+                  currentDecision.reason === 'OVERSTAY' 
+                    ? 'text-orange-600' 
+                    : currentDecision.reason === 'UNAUTHORISED_PARKING'
+                      ? 'text-violet-600'
+                      : 'text-red-600'
+                }`} />
+                PCN Justification
+              </h5>
+              
+              {/* Reason Summary */}
+              <div className="bg-white dark:bg-slate-800 p-3 rounded-lg mb-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-sm font-bold px-3 py-1 rounded ${
+                    currentDecision.reason === 'OVERSTAY' 
+                      ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300'
+                      : currentDecision.reason === 'UNAUTHORISED_PARKING'
+                        ? 'bg-violet-100 dark:bg-violet-900/40 text-violet-800 dark:text-violet-300'
+                        : 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300'
+                  }`}>
+                    {currentDecision.reason.replace(/_/g, ' ')}
+                  </span>
+                </div>
+                
+                {currentDecision.reason === 'OVERSTAY' && currentDecision.auditSummary?.paymentsAtSite?.length ? (
+                  <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                    <p className="font-medium">
+                      Vehicle had a valid payment but exceeded the paid duration.
+                    </p>
+                    {(() => {
+                      const payment = currentDecision.auditSummary.paymentsAtSite[0];
+                      const paidMins = Math.round((new Date(payment.expiryTime).getTime() - new Date(payment.startTime).getTime()) / 60000);
+                      const parkedMins = currentDecision.durationMinutes || 0;
+                      const overstayMins = parkedMins > paidMins ? parkedMins - paidMins : 0;
+                      return (
+                        <>
+                          <p>• Paid for: <strong>{Math.floor(paidMins / 60)}h {paidMins % 60}m</strong> (£{payment.amount.toFixed(2)} via {payment.source})</p>
+                          <p>• Actually parked: <strong>{Math.floor(parkedMins / 60)}h {parkedMins % 60}m</strong></p>
+                          <p>• Overstayed by: <strong className="text-orange-700 dark:text-orange-400">{Math.floor(overstayMins / 60)}h {overstayMins % 60}m</strong></p>
+                        </>
+                      );
+                    })()}
+                  </div>
+                ) : currentDecision.reason === 'NO_VALID_PAYMENT' ? (
+                  <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                    <p className="font-medium">
+                      No valid payment or permit found covering the parking session.
+                    </p>
+                    <p>• Parked for: <strong>{formatDuration(currentDecision.durationMinutes)}</strong></p>
+                    <p>• Payments found: <strong className="text-red-700 dark:text-red-400">{currentDecision.verifications?.paymentsCount || 0}</strong></p>
+                    <p>• Permit status: <strong className="text-red-700 dark:text-red-400">{currentDecision.verifications?.permitFound ? 'Found (but not valid)' : 'None'}</strong></p>
+                  </div>
+                ) : currentDecision.reason === 'UNAUTHORISED_PARKING' ? (
+                  <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                    <p className="font-medium">
+                      Vehicle parked without valid permit or authorisation.
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      This is a permit-only site with no public payment option.
+                    </p>
+                    <p>• Parked for: <strong>{formatDuration(currentDecision.durationMinutes)}</strong></p>
+                    <p>• Permit status: <strong className="text-red-700 dark:text-red-400">{currentDecision.verifications?.permitFound ? 'Found (but not valid)' : 'No valid permit'}</strong></p>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                    <p>{currentDecision.verifications?.paymentDetails || 'Unknown violation reason'}</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Verification Checklist */}
+              {currentDecision.verifications && (
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className={`flex items-center gap-1 p-2 rounded ${
+                    currentDecision.verifications.permitFound 
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                  }`}>
+                    {currentDecision.verifications.permitFound ? <ShieldCheck className="w-4 h-4" /> : <ShieldX className="w-4 h-4" />}
+                    <span>{currentDecision.verifications.permitFound ? 'Permit Found' : 'No Permit'}</span>
+                  </div>
+                  <div className={`flex items-center gap-1 p-2 rounded ${
+                    currentDecision.verifications.paymentFound 
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                  }`}>
+                    {currentDecision.verifications.paymentFound ? <Banknote className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                    <span>{currentDecision.verifications.paymentsCount} Payment{currentDecision.verifications.paymentsCount !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className={`flex items-center gap-1 p-2 rounded ${
+                    currentDecision.verifications.siteEnforcementEnabled 
+                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+                      : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                  }`}>
+                    <Check className="w-4 h-4" />
+                    <span>{currentDecision.verifications.siteEnforcementEnabled ? 'Enforcement Active' : 'Enforcement Off'}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Session Timeline */}
+            <div className="grid grid-cols-4 gap-3 mb-4">
               <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-lg">
-                <span className="block text-xs text-gray-500 dark:text-gray-500 mb-1">
-                  Entry Time
-                </span>
+                <span className="block text-xs text-gray-500 dark:text-gray-500 mb-1">Entry Time</span>
                 <span className="text-sm font-medium text-gray-900 dark:text-white">
-                  {currentDecision.entryTime
-                    ? new Date(currentDecision.entryTime).toLocaleString()
-                    : 'N/A'}
+                  {currentDecision.entryTime ? new Date(currentDecision.entryTime).toLocaleString() : 'N/A'}
                 </span>
               </div>
               <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-lg">
-                <span className="block text-xs text-gray-500 dark:text-gray-500 mb-1">
-                  Exit Time
-                </span>
+                <span className="block text-xs text-gray-500 dark:text-gray-500 mb-1">Exit Time</span>
                 <span className="text-sm font-medium text-gray-900 dark:text-white">
-                  {currentDecision.exitTime
-                    ? new Date(currentDecision.exitTime).toLocaleString()
-                    : 'N/A'}
+                  {currentDecision.exitTime ? new Date(currentDecision.exitTime).toLocaleString() : 'N/A'}
                 </span>
               </div>
               <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-lg">
-                <span className="block text-xs text-gray-500 dark:text-gray-500 mb-1">
-                  AI Confidence
+                <span className="block text-xs text-gray-500 dark:text-gray-500 mb-1">Total Duration</span>
+                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                  {formatDuration(currentDecision.durationMinutes)}
                 </span>
+              </div>
+              <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-lg">
+                <span className="block text-xs text-gray-500 dark:text-gray-500 mb-1">AI Confidence</span>
                 <span className="text-sm font-bold text-gray-900 dark:text-white">
                   {(currentDecision.confidenceScore * 100).toFixed(0)}%
                 </span>
               </div>
             </div>
+            
+            {/* Payment Details (if any) */}
+            {currentDecision.auditSummary?.paymentsAtSite && currentDecision.auditSummary.paymentsAtSite.length > 0 && (
+              <div className="bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 p-4 rounded-lg mb-4">
+                <h5 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2 text-sm">
+                  <CreditCard className="w-4 h-4 text-cyan-600" />
+                  Payment History at Site ({currentDecision.auditSummary.paymentsAtSite.length})
+                </h5>
+                <div className="space-y-2">
+                  {currentDecision.auditSummary.paymentsAtSite.map((payment, idx) => {
+                    const startTime = new Date(payment.startTime);
+                    const expiryTime = new Date(payment.expiryTime);
+                    const durationMins = Math.round((expiryTime.getTime() - startTime.getTime()) / 60000);
+                    const sessionStart = currentDecision.entryTime ? new Date(currentDecision.entryTime) : null;
+                    const sessionEnd = currentDecision.exitTime ? new Date(currentDecision.exitTime) : null;
+                    
+                    // Check if payment overlaps with session
+                    const coversEntry = sessionStart && startTime <= sessionStart && expiryTime >= sessionStart;
+                    const coversExit = sessionEnd && startTime <= sessionEnd && expiryTime >= sessionEnd;
+                    const expiredDuring = sessionEnd && expiryTime < sessionEnd && expiryTime > (sessionStart || new Date(0));
+                    
+                    return (
+                      <div key={idx} className={`bg-white dark:bg-slate-800 p-3 rounded-lg border-l-4 ${
+                        coversEntry && coversExit ? 'border-green-500' :
+                        expiredDuring ? 'border-orange-500' :
+                        'border-gray-300'
+                      }`}>
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <span className="font-bold text-lg text-gray-900 dark:text-white">£{payment.amount.toFixed(2)}</span>
+                            <span className="ml-2 text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300">
+                              {payment.source}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                              coversEntry && coversExit 
+                                ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300'
+                                : expiredDuring
+                                  ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300'
+                                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                            }`}>
+                              {coversEntry && coversExit ? '✓ Covers Session' : expiredDuring ? '⚠ Expired During Stay' : 'Did Not Cover'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs text-gray-600 dark:text-gray-400">
+                          <div>
+                            <span className="block text-gray-400 dark:text-gray-500">Started</span>
+                            <span className="font-medium text-gray-800 dark:text-gray-200">{startTime.toLocaleString()}</span>
+                          </div>
+                          <div>
+                            <span className="block text-gray-400 dark:text-gray-500">Expired</span>
+                            <span className={`font-medium ${expiredDuring ? 'text-orange-700 dark:text-orange-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                              {expiryTime.toLocaleString()}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="block text-gray-400 dark:text-gray-500">Duration Paid</span>
+                            <span className="font-medium text-gray-800 dark:text-gray-200">{Math.floor(durationMins / 60)}h {durationMins % 60}m</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-            {/* Tabbed Content */}
-            <div className="grid grid-cols-3 gap-4">
+            {/* Vehicle Info Grid */}
+            <div className="grid grid-cols-3 gap-4 mb-4">
               {/* History */}
               <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg">
                 <h5 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2 text-sm">
                   <History className="w-4 h-4" />
-                  History
+                  Enforcement History
                 </h5>
-                {vehicleHistory && (
+                {vehicleHistory ? (
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">
-                        Total:
-                      </span>
-                      <span className="font-bold text-gray-900 dark:text-white">
-                        {vehicleHistory.totalEnforcements}
-                      </span>
+                      <span className="text-gray-600 dark:text-gray-400">Total PCNs:</span>
+                      <span className="font-bold text-gray-900 dark:text-white">{vehicleHistory.totalEnforcements}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">
-                        Approved:
-                      </span>
-                      <span className="font-bold text-green-600 dark:text-green-400">
-                        {vehicleHistory.totalApproved}
-                      </span>
+                      <span className="text-gray-600 dark:text-gray-400">Approved:</span>
+                      <span className="font-bold text-green-600 dark:text-green-400">{vehicleHistory.totalApproved}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">
-                        Rejected:
-                      </span>
-                      <span className="font-bold text-red-600 dark:text-red-400">
-                        {vehicleHistory.totalRejected}
-                      </span>
+                      <span className="text-gray-600 dark:text-gray-400">Rejected:</span>
+                      <span className="font-bold text-red-600 dark:text-red-400">{vehicleHistory.totalRejected}</span>
                     </div>
+                    {currentDecision.auditSummary?.previousSessionsAtSite !== undefined && (
+                      <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-slate-700">
+                        <span className="text-gray-600 dark:text-gray-400">Visits to this site:</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{currentDecision.auditSummary.previousSessionsAtSite}</span>
+                      </div>
+                    )}
                   </div>
+                ) : (
+                  <div className="text-xs text-gray-500 dark:text-gray-400">No history available</div>
                 )}
               </div>
 
@@ -760,18 +1149,18 @@ export function EnforcementReview() {
                   <Tag className="w-4 h-4" />
                   Markers ({vehicleMarkers.length})
                 </h5>
-                <div className="space-y-1 max-h-24 overflow-y-auto">
-                  {vehicleMarkers.map((marker) => (
-                    <div
-                      key={marker.id}
-                      className="text-xs bg-yellow-100 dark:bg-yellow-900/20 p-2 rounded"
-                    >
-                      <div className="font-bold text-yellow-900 dark:text-yellow-400">
-                        {marker.markerType}
+                {vehicleMarkers.length > 0 ? (
+                  <div className="space-y-1 max-h-24 overflow-y-auto">
+                    {vehicleMarkers.map((marker) => (
+                      <div key={marker.id} className="text-xs bg-yellow-100 dark:bg-yellow-900/20 p-2 rounded">
+                        <div className="font-bold text-yellow-900 dark:text-yellow-400">{marker.markerType}</div>
+                        {marker.description && <div className="text-yellow-700 dark:text-yellow-500 mt-1">{marker.description}</div>}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-500 dark:text-gray-400">No markers on this vehicle</div>
+                )}
               </div>
 
               {/* Notes */}
@@ -780,16 +1169,114 @@ export function EnforcementReview() {
                   <FileText className="w-4 h-4" />
                   Notes ({vehicleNotes.length})
                 </h5>
-                <div className="space-y-1 max-h-24 overflow-y-auto text-xs text-gray-700 dark:text-gray-300">
-                  {vehicleNotes.map((note) => (
-                    <div
-                      key={note.id}
-                      className="bg-white dark:bg-slate-900 p-2 rounded"
-                    >
-                      {note.note}
-                    </div>
-                  ))}
-                </div>
+                {vehicleNotes.length > 0 ? (
+                  <div className="space-y-1 max-h-24 overflow-y-auto text-xs text-gray-700 dark:text-gray-300">
+                    {vehicleNotes.map((note) => (
+                      <div key={note.id} className="bg-white dark:bg-slate-900 p-2 rounded">
+                        <div>{note.note}</div>
+                        <div className="text-gray-400 dark:text-gray-500 mt-1 text-[10px]">
+                          {note.createdBy} • {new Date(note.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-500 dark:text-gray-400">No notes on this vehicle</div>
+                )}
+              </div>
+            </div>
+
+            {/* Audit Trail */}
+            <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg">
+              <h5 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2 text-sm">
+                <ActivitySquare className="w-4 h-4" />
+                Activity Timeline
+                {auditsLoading ? (
+                  <span className="text-gray-500 dark:text-gray-400 text-xs font-normal">(loading...)</span>
+                ) : (
+                  <span className="text-gray-500 dark:text-gray-400 text-xs font-normal">
+                    ({vehicleAudits.length} events)
+                  </span>
+                )}
+              </h5>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {auditsLoading ? (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-4">Loading...</div>
+                ) : vehicleAudits.length === 0 ? (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-4">
+                    No audit events found for this PCN period.
+                  </div>
+                ) : (
+                  vehicleAudits.map((audit) => {
+                    // Format action name nicely
+                    const actionLabels: Record<string, { label: string; icon: string }> = {
+                      'MOVEMENT_INGESTED': { label: 'Vehicle Detected', icon: '📷' },
+                      'SESSION_CREATED': { label: 'Parking Started', icon: '🚗' },
+                      'SESSION_COMPLETED': { label: 'Parking Ended', icon: '🏁' },
+                      'DECISION_CREATED': { label: 'PCN Decision Made', icon: '⚖️' },
+                      'PAYMENT_INGESTED': { label: 'Payment Received', icon: '💳' },
+                      'PERMIT_INGESTED': { label: 'Permit Detected', icon: '📋' },
+                      'ENFORCEMENT_REVIEWED': { label: 'Operator Review', icon: '👤' },
+                      'RECONCILIATION_TRIGGERED': { label: 'Payment Matched', icon: '🔄' },
+                    };
+                    const actionInfo = actionLabels[audit.action] || { label: audit.action.replace(/_/g, ' '), icon: '📌' };
+                    
+                    return (
+                      <div
+                        key={audit.id}
+                        className={`bg-white dark:bg-slate-900 p-3 rounded-lg border-l-4 ${
+                          audit.action === 'PAYMENT_INGESTED' || audit.action === 'RECONCILIATION_TRIGGERED' 
+                            ? 'border-cyan-500' 
+                            : audit.action === 'DECISION_CREATED' 
+                              ? 'border-purple-500'
+                              : audit.action.includes('SESSION') 
+                                ? 'border-green-500'
+                                : 'border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-base">{actionInfo.icon}</span>
+                            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {actionInfo.label}
+                            </span>
+                          </div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(audit.timestamp).toLocaleString()}
+                          </span>
+                        </div>
+                        {/* Show relevant details based on action type */}
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                          {audit.action === 'PAYMENT_INGESTED' && audit.details && (
+                            <span>
+                              £{audit.details.amount?.toFixed(2) || '?'} via {audit.details.source || 'unknown'} 
+                              {audit.details.expiryTime && ` • Valid until ${new Date(audit.details.expiryTime).toLocaleTimeString()}`}
+                            </span>
+                          )}
+                          {audit.action === 'MOVEMENT_INGESTED' && audit.details && (
+                            <span>
+                              {audit.details.direction || 'Unknown direction'} 
+                              {audit.details.camera && ` • ${audit.details.camera}`}
+                            </span>
+                          )}
+                          {audit.action === 'DECISION_CREATED' && audit.details && (
+                            <span className={audit.details.outcome === 'ENFORCEMENT_CANDIDATE' ? 'text-red-600 dark:text-red-400' : ''}>
+                              {audit.details.reason || audit.details.outcome}
+                            </span>
+                          )}
+                          {audit.action === 'RECONCILIATION_TRIGGERED' && (
+                            <span>Payment matched to session</span>
+                          )}
+                          {!['PAYMENT_INGESTED', 'MOVEMENT_INGESTED', 'DECISION_CREATED', 'RECONCILIATION_TRIGGERED'].includes(audit.action) && (
+                            <span className="text-gray-400">
+                              {audit.actor && `by ${audit.actor}`}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>

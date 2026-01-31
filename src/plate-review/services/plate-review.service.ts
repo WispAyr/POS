@@ -467,4 +467,69 @@ export class PlateReviewService {
       throw error;
     }
   }
+
+  /**
+   * Bulk discard reviews by suspicion reason
+   * Useful for clearing out categories like HAILO_NO_VEHICLE, UNKNOWN_PLATE
+   */
+  async bulkDiscardByReason(
+    suspicionReason: string,
+    userId: string,
+    discardReason: string,
+    siteId?: string,
+    limit = 100,
+  ): Promise<{ discarded: number; errors: number }> {
+    // Find matching pending reviews
+    const queryBuilder = this.plateReviewRepository
+      .createQueryBuilder('review')
+      .where('review.reviewStatus = :status', { status: ReviewStatus.PENDING })
+      .andWhere('review.suspicionReasons LIKE :reason', { reason: `%${suspicionReason}%` });
+
+    if (siteId) {
+      queryBuilder.andWhere('review.siteId = :siteId', { siteId });
+    }
+
+    const reviews = await queryBuilder.take(limit).getMany();
+
+    let discarded = 0;
+    let errors = 0;
+
+    for (const review of reviews) {
+      try {
+        await this.discardPlate(review.id, userId, discardReason);
+        discarded++;
+      } catch (err) {
+        this.logger.error(`Failed to discard review ${review.id}: ${err.message}`);
+        errors++;
+      }
+    }
+
+    this.logger.log(
+      `Bulk discard by reason '${suspicionReason}': ${discarded} discarded, ${errors} errors`,
+    );
+
+    return { discarded, errors };
+  }
+
+  /**
+   * Get stats of pending reviews grouped by suspicion reason
+   */
+  async getReviewsByReasonStats(siteId?: string): Promise<Array<{ reason: string; count: number }>> {
+    const queryBuilder = this.plateReviewRepository
+      .createQueryBuilder('review')
+      .select('review.suspicionReasons', 'reason')
+      .addSelect('COUNT(*)', 'count')
+      .where('review.reviewStatus = :status', { status: ReviewStatus.PENDING });
+
+    if (siteId) {
+      queryBuilder.andWhere('review.siteId = :siteId', { siteId });
+    }
+
+    const results = await queryBuilder
+      .groupBy('review.suspicionReasons')
+      .orderBy('count', 'DESC')
+      .getRawMany();
+
+    return results.map(r => ({ reason: r.reason, count: parseInt(r.count, 10) }));
+  }
 }

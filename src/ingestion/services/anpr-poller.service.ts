@@ -294,7 +294,8 @@ export class AnprPollerService {
       aspect: 'ASP01',
       kent_wharf: 'KWF01',
       radisson: 'RDB01',
-      kyle: 'KMS01',
+      kyle_rise_ayr: 'KCS01', // Kyle Surface (Hikvision ANPR camera)
+      kyle: 'KCS01', // Default Kyle to Surface
       bridlington: 'BPD01',
       coastal: 'CPZ01',
     };

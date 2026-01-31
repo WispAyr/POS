@@ -61,6 +61,23 @@ export class ImageService {
   }
 
   /**
+   * Save an image from a buffer (for direct uploads)
+   * Returns the local filename
+   */
+  async saveFromBuffer(
+    buffer: Buffer,
+    type: 'plate' | 'overview' | 'context',
+  ): Promise<string> {
+    const filename = `${uuidv4()}-${type}.jpg`;
+    const filepath = path.join(this.uploadDir, filename);
+
+    fs.writeFileSync(filepath, buffer);
+
+    this.logger.debug(`Saved uploaded image: ${filename}`);
+    return filename;
+  }
+
+  /**
    * Get image file path by filename
    */
   getImagePath(filename: string): string | null {

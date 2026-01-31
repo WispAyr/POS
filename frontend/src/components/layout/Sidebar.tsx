@@ -5,6 +5,7 @@ import {
   Users,
   Settings,
   ShieldAlert,
+  Shield,
   Camera,
   FileSearch,
   Package,
@@ -18,6 +19,7 @@ import {
   Search,
   Activity,
   PanelLeftClose,
+  AlertTriangle,
   PanelLeft,
   Monitor,
   Send,
@@ -46,7 +48,9 @@ const NAV_GROUPS = [
     items: [
       { icon: ScanEye, label: 'Plate Review', viewId: 'plate-review' },
       { icon: ShieldAlert, label: 'Review Queue', viewId: 'enforcement' },
+      { icon: AlertTriangle, label: 'FILO Anomalies', viewId: 'filo-anomalies' },
       { icon: FileDown, label: 'PCN Export', viewId: 'pcn-export' },
+      { icon: Shield, label: 'Engine Settings', viewId: 'enforcement-settings' },
     ],
   },
   {
@@ -63,6 +67,7 @@ const NAV_GROUPS = [
     key: 'monitoring',
     items: [
       { icon: Radio, label: 'Car Park Live', viewId: 'car-park-live' },
+      { icon: Activity, label: 'Live Audit Stream', viewId: 'audit-stream' },
       { icon: Bell, label: 'Alarms', viewId: 'alarms' },
       { icon: Send, label: 'Notifications', viewId: 'scheduled-notifications' },
       { icon: Activity, label: 'System Monitor', viewId: 'system-monitor' },
@@ -73,6 +78,7 @@ const NAV_GROUPS = [
     title: 'Admin',
     key: 'admin',
     items: [
+      { icon: MapIcon, label: 'Site Config', viewId: 'site-config' },
       { icon: CreditCard, label: 'Payment Tracking', viewId: 'payments' },
       { icon: Plug, label: 'Payment Providers', viewId: 'payment-providers' },
       { icon: Upload, label: 'Customer Export', viewId: 'customer-export' },

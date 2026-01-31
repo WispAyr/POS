@@ -9,9 +9,16 @@ import {
   Movement,
   VehicleNote,
   VehicleMarker,
+  SiteEnforcementRule,
+  Site,
+  DecisionOutcome,
+  Permit,
+  Payment,
 } from '../domain/entities';
 import { EnforcementController } from './enforcement.controller';
 import { EnforcementService } from './services/enforcement.service';
+import { SiteEnforcementRulesController } from './site-enforcement-rules.controller';
+import { SiteEnforcementRulesService } from './services/site-enforcement-rules.service';
 
 @Module({
   imports: [
@@ -24,10 +31,14 @@ import { EnforcementService } from './services/enforcement.service';
       Movement,
       VehicleNote,
       VehicleMarker,
+      SiteEnforcementRule,
+      Site,
+      Permit,
+      Payment,
     ]),
   ],
-  controllers: [EnforcementController],
-  providers: [EnforcementService],
-  exports: [EnforcementService],
+  controllers: [EnforcementController, SiteEnforcementRulesController],
+  providers: [EnforcementService, SiteEnforcementRulesService],
+  exports: [EnforcementService, SiteEnforcementRulesService],
 })
 export class EnforcementModule {}

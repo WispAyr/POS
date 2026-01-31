@@ -21,8 +21,12 @@ import { SystemMonitorModule } from './system-monitor/system-monitor.module';
 import { OperationsDashboardModule } from './operations-dashboard/operations-dashboard.module';
 import { ScheduledNotificationsModule } from './scheduled-notifications/scheduled-notifications.module';
 import { LiveOpsModule } from './live-ops/live-ops.module';
+import { SentryflowModule } from './sentryflow/sentryflow.module';
 import { AiModule } from './services/ai.module';
 import { AppController } from './app.controller';
+import { ScheduleModule } from '@nestjs/schedule';
+import { PhoenixSyncService } from './services/phoenix-sync.service';
+import { Movement, Payment } from './domain/entities';
 
 @Module({
   imports: [
@@ -40,6 +44,15 @@ import { AppController } from './app.controller';
         database: configService.get<string>('DB_DATABASE', 'pos_db'),
         autoLoadEntities: true,
         synchronize: configService.get<string>('NODE_ENV') !== 'production',
+        // Connection pooling for stability
+        extra: {
+          max: 20, // max connections in pool
+          idleTimeoutMillis: 30000, // close idle connections after 30s
+          connectionTimeoutMillis: 10000, // timeout connecting after 10s
+        },
+        // Auto-retry connection on failure
+        retryAttempts: 3,
+        retryDelay: 3000,
       }),
       inject: [ConfigService],
     }),
@@ -63,8 +76,12 @@ import { AppController } from './app.controller';
     OperationsDashboardModule,
     ScheduledNotificationsModule,
     LiveOpsModule,
+    SentryflowModule,
     AiModule,
+    ScheduleModule.forRoot(),
+    TypeOrmModule.forFeature([Movement, Payment]),
   ],
   controllers: [AppController],
+  providers: [PhoenixSyncService],
 })
 export class AppModule {}

@@ -1,9 +1,50 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, Sse, MessageEvent } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
+import { Observable, interval, map, startWith, switchMap } from 'rxjs';
 
 @Controller('api/audit')
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
+
+  /**
+   * Get latest audit events (for polling/dashboard)
+   */
+  @Get('latest')
+  async getLatestEvents(
+    @Query('limit') limit?: string,
+    @Query('since') since?: string,
+    @Query('siteId') siteId?: string,
+  ) {
+    return this.auditService.getLatestEvents({
+      limit: limit ? parseInt(limit, 10) : 50,
+      since: since ? new Date(since) : undefined,
+      siteId,
+    });
+  }
+
+  /**
+   * Server-Sent Events stream for live audit updates
+   */
+  @Sse('stream')
+  streamEvents(
+    @Query('siteId') siteId?: string,
+  ): Observable<MessageEvent> {
+    // Poll every 2 seconds for new events
+    return interval(2000).pipe(
+      startWith(0),
+      switchMap(async () => {
+        const events = await this.auditService.getLatestEvents({
+          limit: 20,
+          since: new Date(Date.now() - 5000), // Last 5 seconds
+          siteId,
+        });
+        return events;
+      }),
+      map((events) => ({
+        data: JSON.stringify(events),
+      })),
+    );
+  }
 
   @Get('vrm/:vrm')
   async getAuditTrailByVrm(

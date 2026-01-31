@@ -9,15 +9,22 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { HailoService, HailoAnalysisResult } from './hailo.service';
+import { HailoValidationService } from './hailo-validation.service';
 import { ProtectDetectionService, EnrichedDetection } from './protect-detection.service';
 import { AnprEnrichmentService } from './anpr-enrichment.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Movement } from '../domain/entities';
 
 @Controller('api/ai')
 export class AiController {
   constructor(
     private readonly hailoService: HailoService,
+    private readonly hailoValidationService: HailoValidationService,
     private readonly protectService: ProtectDetectionService,
     private readonly enrichmentService: AnprEnrichmentService,
+    @InjectRepository(Movement)
+    private readonly movementRepo: Repository<Movement>,
   ) {}
 
   /**
@@ -199,6 +206,73 @@ export class AiController {
   ) {
     this.enrichmentService.setCameraMapping(body.anprId, body.protectId);
     return { success: true, mapping: body };
+  }
+
+  // ========== Hailo Vehicle Validation Endpoints ==========
+
+  /**
+   * Validate a single movement for vehicle presence
+   */
+  @Post('validate/movement/:movementId')
+  @HttpCode(HttpStatus.OK)
+  async validateMovement(@Param('movementId') movementId: string) {
+    const movement = await this.movementRepo.findOne({ where: { id: movementId } });
+    if (!movement) {
+      return { success: false, error: 'Movement not found' };
+    }
+
+    const result = await this.hailoValidationService.validateMovement(movement);
+    
+    return {
+      success: result.validated,
+      movementId,
+      vehicleFound: result.vehicleFound,
+      vehicleCount: result.vehicleCount,
+      confidence: result.confidence,
+      error: result.error,
+    };
+  }
+
+  /**
+   * Batch validate pending movements
+   */
+  @Post('validate/batch')
+  @HttpCode(HttpStatus.OK)
+  async validateBatch(@Query('limit') limit?: string) {
+    const l = limit ? parseInt(limit, 10) : 50;
+    const result = await this.hailoValidationService.validatePendingMovements(l);
+    
+    return {
+      success: true,
+      ...result,
+      message: `Validated ${result.processed} movements: ${result.vehiclesFound} with vehicles, ${result.noVehicle} flagged (no vehicle)`,
+    };
+  }
+
+  /**
+   * Get validation statistics
+   */
+  @Get('validate/stats')
+  async getValidationStats() {
+    const total = await this.movementRepo.count();
+    const validated = await this.movementRepo.count({ where: { hailoValidated: true } });
+    const noVehicle = await this.movementRepo.count({ where: { hailoValidated: false } });
+    const pending = await this.movementRepo
+      .createQueryBuilder('m')
+      .where('m.hailoValidated IS NULL')
+      .andWhere('m.discarded = false')
+      .getCount();
+
+    return {
+      total,
+      validated,
+      noVehicle,
+      pending,
+      validationRate: total > 0 ? ((validated + noVehicle) / total * 100).toFixed(1) + '%' : '0%',
+      falsePositiveRate: (validated + noVehicle) > 0 
+        ? (noVehicle / (validated + noVehicle) * 100).toFixed(1) + '%' 
+        : '0%',
+    };
   }
 
   /**

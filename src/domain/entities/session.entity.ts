@@ -11,6 +11,7 @@ export enum SessionStatus {
   PROVISIONAL = 'PROVISIONAL',
   COMPLETED = 'COMPLETED',
   INVALID = 'INVALID',
+  EXPIRED = 'EXPIRED', // Auto-closed due to no exit detected within threshold
 }
 
 @Entity('sessions')

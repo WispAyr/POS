@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import axios from 'axios';
 import {
   Search,
@@ -75,8 +75,12 @@ interface VrmSearchResult {
   }[];
 }
 
-export function VrmSearch() {
-  const [searchInput, setSearchInput] = useState('');
+interface VrmSearchProps {
+  initialVrm?: string;
+}
+
+export function VrmSearch({ initialVrm }: VrmSearchProps = {}) {
+  const [searchInput, setSearchInput] = useState(initialVrm || '');
   const [result, setResult] = useState<VrmSearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,27 +92,37 @@ export function VrmSearch() {
     notes: false,
     markers: false,
   });
+  const [hasAutoSearched, setHasAutoSearched] = useState(false);
 
-  const handleSearch = useCallback(async () => {
-    if (!searchInput.trim()) return;
+  const handleSearch = useCallback(async (vrmToSearch?: string) => {
+    const vrm = vrmToSearch || searchInput;
+    if (!vrm.trim()) return;
 
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
-      const { data } = await axios.get(`/api/search/vrm/${encodeURIComponent(searchInput.trim())}`);
+      const { data } = await axios.get(`/api/search/vrm/${encodeURIComponent(vrm.trim())}`);
       setResult(data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Search failed');
     } finally {
       setLoading(false);
     }
-  }, [searchInput]);
+  }, []);
+
+  // Auto-search when initialVrm is provided
+  useEffect(() => {
+    if (initialVrm && !hasAutoSearched) {
+      setHasAutoSearched(true);
+      handleSearch(initialVrm);
+    }
+  }, [initialVrm, hasAutoSearched, handleSearch]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleSearch();
+      handleSearch(searchInput);
     }
   };
 
@@ -147,7 +161,7 @@ export function VrmSearch() {
             />
           </div>
           <button
-            onClick={handleSearch}
+            onClick={() => handleSearch(searchInput)}
             disabled={loading || !searchInput.trim()}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2"
           >

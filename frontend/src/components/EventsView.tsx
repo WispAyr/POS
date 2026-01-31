@@ -26,6 +26,19 @@ interface EventData {
   direction: string;
   cameraIds: string;
   images?: EventImage[];
+  discarded?: boolean;
+  hailoValidated?: boolean;
+  hailoVehicleCount?: number;
+  hailoConfidence?: number;
+  hailoResult?: {
+    vehicleCount?: number;
+    confidence?: number;
+    detections?: Array<{
+      class: string;
+      confidence: number;
+      bbox?: number[];
+    }>;
+  };
 }
 
 interface EventsResponse {
@@ -62,16 +75,12 @@ export function EventsView() {
     return () => clearTimeout(timer);
   }, [vrmSearch]);
 
-  // Fetch sites for filter
+  // Fetch sites that have events (not all sites)
   useEffect(() => {
-    fetch(`${API_BASE}/api/sites`)
+    fetch(`${API_BASE}/api/sites/with-events`)
       .then((res) => res.json())
       .then((data) => {
-        // Show all active sites
-        const activeSites = data.filter(
-          (s: Site & { active?: boolean }) => s.active !== false,
-        );
-        setSites(activeSites);
+        setSites(data);
       })
       .catch(console.error);
   }, []);
@@ -193,7 +202,11 @@ export function EventsView() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {events.map((event) => (
-            <EventCard key={event.id} {...event} />
+            <EventCard 
+              key={event.id} 
+              {...event} 
+              onUpdate={() => fetchEvents(meta.page)}
+            />
           ))}
         </div>
       )}

@@ -6,6 +6,7 @@ import { Movement, Site, Payment, Permit } from '../domain/entities';
 import { EngineModule } from '../engine/engine.module';
 import { AuditModule } from '../audit/audit.module';
 import { IngestionController } from './ingestion.controller';
+import { AnprEventsController } from './anpr-events.controller';
 import { AnprIngestionService } from './services/anpr-ingestion.service';
 import { PaymentIngestionService } from './services/payment-ingestion.service';
 import { AnprPollerService } from './services/anpr-poller.service';
@@ -17,6 +18,7 @@ import { AnprPollerController } from './anpr-poller.controller';
 import { HttpModule } from '@nestjs/axios';
 import { IntegrationModule } from '../integration/integration.module';
 import { PlateReviewModule } from '../plate-review/plate-review.module';
+import { AiModule } from '../services/ai.module';
 
 @Module({
   imports: [
@@ -27,9 +29,10 @@ import { PlateReviewModule } from '../plate-review/plate-review.module';
     ConfigModule,
     forwardRef(() => IntegrationModule),
     PlateReviewModule, // Provides PlateValidationService and PlateReviewService
+    forwardRef(() => AiModule), // Provides HailoValidationService
     TypeOrmModule.forFeature([Movement, Site, Payment, Permit]),
   ],
-  controllers: [IngestionController, AnprPollerController],
+  controllers: [IngestionController, AnprPollerController, AnprEventsController],
   providers: [
     AnprIngestionService,
     PaymentIngestionService,

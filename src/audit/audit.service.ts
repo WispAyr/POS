@@ -770,6 +770,40 @@ export class AuditService {
   }
 
   /**
+   * Get latest audit events (optimized for live dashboard/polling)
+   */
+  async getLatestEvents(options: {
+    limit?: number;
+    since?: Date;
+    siteId?: string;
+  }): Promise<{
+    events: AuditLog[];
+    latestTimestamp: string | null;
+    count: number;
+  }> {
+    const qb = this.auditRepo.createQueryBuilder('audit');
+
+    if (options.since) {
+      qb.andWhere('audit.timestamp > :since', { since: options.since });
+    }
+
+    if (options.siteId) {
+      qb.andWhere('audit.siteId = :siteId', { siteId: options.siteId });
+    }
+
+    qb.orderBy('audit.timestamp', 'DESC');
+    qb.take(options.limit || 50);
+
+    const events = await qb.getMany();
+
+    return {
+      events,
+      latestTimestamp: events.length > 0 ? events[0].timestamp.toISOString() : null,
+      count: events.length,
+    };
+  }
+
+  /**
    * Log email fetch from payment provider
    */
   async logEmailFetch(

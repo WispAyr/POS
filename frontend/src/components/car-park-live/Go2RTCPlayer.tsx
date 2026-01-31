@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Camera, Loader2, RefreshCw, Maximize2 } from 'lucide-react';
 
 interface Go2RTCPlayerProps {
@@ -15,13 +15,18 @@ interface Go2RTCPlayerProps {
 export function Go2RTCPlayer({
   streamName,
   cameraName,
-  go2rtcHost = 'localhost:1984',
+  go2rtcHost = '',  // Empty = use relative path via proxy
   snapshotUrl,
 }: Go2RTCPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [status, setStatus] = useState<'connecting' | 'playing' | 'error'>('connecting');
   const [useSnapshot, setUseSnapshot] = useState(false);
-  const [snapshotTs, setSnapshotTs] = useState(Date.now());
+  const [_snapshotTs, _setSnapshotTs] = useState(Date.now());
+  
+  // Double-buffer for smooth snapshot transitions
+  const [activeBuffer, setActiveBuffer] = useState<0 | 1>(0);
+  const [bufferUrls, setBufferUrls] = useState<[string, string]>(['', '']);
+  const [_bufferLoaded, setBufferLoaded] = useState<[boolean, boolean]>([false, false]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -66,7 +71,11 @@ export function Go2RTCPlayer({
       setStatus('connecting');
 
       // Use MSE mode which is more widely supported
-      const wsUrl = `ws://${go2rtcHost}/api/ws?src=${streamName}`;
+      // Use proxy path - works via Vite proxy or production reverse proxy
+      const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsHost = go2rtcHost || window.location.host;
+      const wsPath = go2rtcHost ? '/api/ws' : '/go2rtc/api/ws';
+      const wsUrl = `${wsProto}//${wsHost}${wsPath}?src=${streamName}`;
       ws = new WebSocket(wsUrl);
       ws.binaryType = 'arraybuffer';
 
@@ -155,16 +164,55 @@ export function Go2RTCPlayer({
     };
   }, [streamName, go2rtcHost, useSnapshot, status]);
 
+  // Preload next snapshot into inactive buffer
+  const preloadNextSnapshot = useCallback(() => {
+    if (!snapshotUrl) return;
+    
+    const nextBuffer = activeBuffer === 0 ? 1 : 0;
+    const newUrl = `${snapshotUrl}?t=${Date.now()}`;
+    
+    setBufferUrls(prev => {
+      const updated = [...prev] as [string, string];
+      updated[nextBuffer] = newUrl;
+      return updated;
+    });
+    setBufferLoaded(prev => {
+      const updated = [...prev] as [boolean, boolean];
+      updated[nextBuffer] = false;
+      return updated;
+    });
+  }, [snapshotUrl, activeBuffer]);
+
+  // Handle buffer image load - swap to it
+  const handleBufferLoad = useCallback((bufferIndex: 0 | 1) => {
+    setBufferLoaded(prev => {
+      const updated = [...prev] as [boolean, boolean];
+      updated[bufferIndex] = true;
+      return updated;
+    });
+    // Swap to the newly loaded buffer
+    if (bufferIndex !== activeBuffer) {
+      setActiveBuffer(bufferIndex);
+    }
+  }, [activeBuffer]);
+
+  // Initialize first snapshot
+  useEffect(() => {
+    if (useSnapshot && snapshotUrl && !bufferUrls[0]) {
+      setBufferUrls([`${snapshotUrl}?t=${Date.now()}`, '']);
+    }
+  }, [useSnapshot, snapshotUrl, bufferUrls]);
+
   // Snapshot refresh interval when in snapshot mode
   useEffect(() => {
     if (!useSnapshot) return;
 
     const interval = setInterval(() => {
-      setSnapshotTs(Date.now());
+      preloadNextSnapshot();
     }, 8000);
 
     return () => clearInterval(interval);
-  }, [useSnapshot]);
+  }, [useSnapshot, preloadNextSnapshot]);
 
   const handleRetryVideo = () => {
     setUseSnapshot(false);
@@ -180,16 +228,34 @@ export function Go2RTCPlayer({
   return (
     <div className="aspect-video bg-gray-900 relative group">
       {useSnapshot ? (
-        // Snapshot mode fallback
+        // Snapshot mode with smooth crossfade transitions
         <>
           {snapshotUrl ? (
-            <img
-              key={snapshotTs}
-              src={`${snapshotUrl}?t=${snapshotTs}`}
-              alt={cameraName}
-              className="w-full h-full object-cover"
-              onError={() => {}}
-            />
+            <div className="relative w-full h-full">
+              {/* Double-buffered images for smooth transitions */}
+              {bufferUrls[0] && (
+                <img
+                  src={bufferUrls[0]}
+                  alt={cameraName}
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+                    activeBuffer === 0 ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  onLoad={() => handleBufferLoad(0)}
+                  onError={() => {}}
+                />
+              )}
+              {bufferUrls[1] && (
+                <img
+                  src={bufferUrls[1]}
+                  alt={cameraName}
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+                    activeBuffer === 1 ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  onLoad={() => handleBufferLoad(1)}
+                  onError={() => {}}
+                />
+              )}
+            </div>
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
               <Camera className="w-12 h-12 mb-2 opacity-50" />

@@ -13,6 +13,7 @@ import {
 import { PaymentProviderService } from './services/payment-provider.service';
 import { EmailPaymentPollerService } from './services/email-payment-poller.service';
 import { PaymentProviderMondayService } from './services/payment-provider-monday.service';
+import { Tap2ParkApiPollerService } from './services/tap2park-api-poller.service';
 import { CreatePaymentProviderDto } from './dto/create-payment-provider.dto';
 import { UpdatePaymentProviderDto } from './dto/update-payment-provider.dto';
 import { AssignSiteDto } from './dto/assign-site.dto';
@@ -23,6 +24,7 @@ export class PaymentProviderController {
     private readonly providerService: PaymentProviderService,
     private readonly pollerService: EmailPaymentPollerService,
     private readonly mondayService: PaymentProviderMondayService,
+    private readonly tap2parkService: Tap2ParkApiPollerService,
   ) {}
 
   @Get()
@@ -109,5 +111,37 @@ export class PaymentProviderController {
   @HttpCode(HttpStatus.OK)
   async syncFromMonday() {
     return this.mondayService.triggerSync();
+  }
+
+  // Tap2Park operations
+  @Post('tap2park/sync')
+  @HttpCode(HttpStatus.OK)
+  async triggerTap2ParkSync() {
+    return this.tap2parkService.triggerManualSync();
+  }
+
+  @Post('tap2park/import-history')
+  @HttpCode(HttpStatus.OK)
+  async importTap2ParkHistory(
+    @Query('days') daysStr?: string,
+    @Query('from') fromStr?: string,
+    @Query('to') toStr?: string,
+  ) {
+    let fromDate: Date;
+    let toDate: Date;
+
+    if (fromStr && toStr) {
+      // Use explicit date range
+      fromDate = new Date(fromStr);
+      toDate = new Date(toStr);
+    } else {
+      // Use days parameter (default 90)
+      const days = daysStr ? parseInt(daysStr, 10) : 90;
+      toDate = new Date();
+      fromDate = new Date();
+      fromDate.setDate(fromDate.getDate() - days);
+    }
+
+    return this.tap2parkService.importHistoricalData(fromDate, toDate);
   }
 }

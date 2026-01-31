@@ -214,6 +214,120 @@ const tools: Tool[] = [
       required: ['siteId', 'vrm', 'cameraId'],
     },
   },
+
+  // AI Review Tools
+  {
+    name: 'pos_ai_review_system',
+    description: 'Get a comprehensive system overview for AI review. Returns stats, recent activity, alerts, and queue status.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        siteId: { type: 'string', description: 'Filter to specific site (optional)' },
+        includeAuditTrail: { type: 'boolean', description: 'Include recent audit events (default: true)' },
+        auditLimit: { type: 'number', description: 'Number of audit events to include (default: 20)' },
+      },
+    },
+  },
+  {
+    name: 'pos_ai_review_enforcement',
+    description: 'Get detailed enforcement case data for AI review. Returns decision details, session info, payments, permits, and full audit trail.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        decisionId: { type: 'string', description: 'Decision/enforcement ID to review' },
+      },
+      required: ['decisionId'],
+    },
+  },
+  {
+    name: 'pos_ai_review_vrm',
+    description: 'Get complete vehicle history for AI review. Returns all sessions, payments, permits, decisions, and notes for a VRM.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        vrm: { type: 'string', description: 'Vehicle registration mark' },
+        siteId: { type: 'string', description: 'Filter to specific site (optional)' },
+      },
+      required: ['vrm'],
+    },
+  },
+  {
+    name: 'pos_ai_review_filo',
+    description: 'Get First-In-Last-Out (FILO) anomalies for AI review. Returns sessions with unusual patterns like very long stays, missing exit events, or potential enforcement candidates.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        minHours: { type: 'number', description: 'Minimum session duration in hours to flag as anomaly (default: 24)' },
+        siteId: { type: 'string', description: 'Filter to specific site (optional)' },
+        limit: { type: 'number', description: 'Maximum number of anomalies to return (default: 50)' },
+      },
+    },
+  },
+  {
+    name: 'pos_ai_log_observation',
+    description: 'Log an AI observation/review to the audit trail. Use after reviewing to record findings.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        observationType: { 
+          type: 'string', 
+          enum: ['SYSTEM_REVIEW', 'ENFORCEMENT_REVIEW', 'VRM_REVIEW', 'ANOMALY_DETECTED', 'RECOMMENDATION'],
+          description: 'Type of observation' 
+        },
+        summary: { type: 'string', description: 'Brief summary of observation (required)' },
+        details: { type: 'string', description: 'Detailed findings and analysis' },
+        recommendations: { type: 'string', description: 'Any recommendations for operators' },
+        severity: { 
+          type: 'string', 
+          enum: ['INFO', 'WARNING', 'ALERT', 'CRITICAL'],
+          description: 'Severity level (default: INFO)' 
+        },
+        relatedEntityType: { type: 'string', description: 'Related entity type (e.g., DECISION, SESSION, VRM)' },
+        relatedEntityId: { type: 'string', description: 'Related entity ID' },
+        siteId: { type: 'string', description: 'Related site ID' },
+        vrm: { type: 'string', description: 'Related VRM' },
+      },
+      required: ['observationType', 'summary'],
+    },
+  },
+  {
+    name: 'pos_ai_review_enabled',
+    description: 'Check if AI review feature is enabled in system settings.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+
+  // AI Review Queue Tools (for processing user-initiated reviews)
+  {
+    name: 'pos_ai_review_queue_pending',
+    description: 'Get pending AI review requests from operators. Check this periodically to process review requests.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'pos_ai_review_queue_process',
+    description: 'Mark a review request as being processed. Call before starting analysis.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        requestId: { type: 'string', description: 'The review request ID to mark as processing' },
+      },
+      required: ['requestId'],
+    },
+  },
+  {
+    name: 'pos_ai_review_queue_complete',
+    description: 'Complete a review request with your analysis. Call after finishing review.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        requestId: { type: 'string', description: 'The review request ID to complete' },
+        summary: { type: 'string', description: 'Brief summary of findings (required)' },
+        details: { type: 'string', description: 'Detailed analysis' },
+        recommendations: { type: 'string', description: 'Recommendations for operators' },
+        severity: { type: 'string', enum: ['INFO', 'WARNING', 'ALERT', 'CRITICAL'], description: 'Severity level' },
+      },
+      required: ['requestId', 'summary'],
+    },
+  },
 ];
 
 /**
@@ -343,6 +457,79 @@ async function handleToolCall(name: string, args: Record<string, unknown>): Prom
           cameraId: args.cameraId,
           direction: args.direction || 'ENTRY',
           timestamp: args.timestamp || new Date().toISOString(),
+        });
+        return res.data;
+      }
+
+      // AI Review Tools
+      case 'pos_ai_review_system': {
+        const params: Record<string, unknown> = {
+          includeAuditTrail: args.includeAuditTrail !== false,
+          auditLimit: args.auditLimit || 20,
+        };
+        if (args.siteId) params.siteId = args.siteId;
+        const res = await api.get('/api/ai-review/system', { params });
+        return res.data;
+      }
+
+      case 'pos_ai_review_enforcement': {
+        const res = await api.get(`/api/ai-review/enforcement/${args.decisionId}`);
+        return res.data;
+      }
+
+      case 'pos_ai_review_vrm': {
+        const params: Record<string, unknown> = {};
+        if (args.siteId) params.siteId = args.siteId;
+        const res = await api.get(`/api/ai-review/vrm/${args.vrm}`, { params });
+        return res.data;
+      }
+
+      case 'pos_ai_review_filo': {
+        const params: Record<string, unknown> = {};
+        if (args.minHours) params.minHours = args.minHours;
+        if (args.siteId) params.siteId = args.siteId;
+        if (args.limit) params.limit = args.limit;
+        const res = await api.get('/api/ai-review/filo', { params });
+        return res.data;
+      }
+
+      case 'pos_ai_log_observation': {
+        const res = await api.post('/api/ai-review/observation', {
+          observationType: args.observationType,
+          summary: args.summary,
+          details: args.details,
+          recommendations: args.recommendations,
+          severity: args.severity || 'INFO',
+          relatedEntityType: args.relatedEntityType,
+          relatedEntityId: args.relatedEntityId,
+          siteId: args.siteId,
+          vrm: args.vrm,
+        });
+        return res.data;
+      }
+
+      case 'pos_ai_review_enabled': {
+        const res = await api.get('/api/ai-review/enabled');
+        return res.data;
+      }
+
+      // AI Review Queue Tools
+      case 'pos_ai_review_queue_pending': {
+        const res = await api.get('/api/ai-review-queue/pending');
+        return res.data;
+      }
+
+      case 'pos_ai_review_queue_process': {
+        const res = await api.post(`/api/ai-review-queue/processing/${args.requestId}`);
+        return res.data;
+      }
+
+      case 'pos_ai_review_queue_complete': {
+        const res = await api.post(`/api/ai-review-queue/complete/${args.requestId}`, {
+          summary: args.summary,
+          details: args.details,
+          recommendations: args.recommendations,
+          severity: args.severity || 'INFO',
         });
         return res.data;
       }

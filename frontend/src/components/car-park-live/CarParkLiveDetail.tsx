@@ -3,13 +3,8 @@ import {
   RefreshCw,
   ArrowLeft,
   Camera,
-  Volume2,
-  Radio,
-  Send,
   AlertTriangle,
   CheckCircle,
-  Loader2,
-  ChevronDown,
   DoorOpen,
   Video,
   Image as ImageIcon,
@@ -17,6 +12,9 @@ import {
 } from 'lucide-react';
 import { Go2RTCPlayer } from './Go2RTCPlayer';
 import { CarPark3DView } from './CarPark3DView';
+import { SentryFlowPanel } from './SentryFlowPanel';
+import { VehicleActivityPanel } from './VehicleActivityPanel';
+import { AnnouncementPanel } from './AnnouncementPanel';
 
 interface LiveOpsCamera {
   id: string;
@@ -61,6 +59,12 @@ interface SiteData {
   liveOps: LiveOpsConfig | null;
 }
 
+interface ActiveAlert {
+  type: 'crowd' | 'loitering' | 'noise' | 'after-hours';
+  level: number;
+  message: string;
+}
+
 interface CarParkLiveDetailProps {
   siteId: string;
   onBack: () => void;
@@ -83,10 +87,8 @@ export function CarParkLiveDetail({ siteId, onBack }: CarParkLiveDetailProps) {
   const [viewMode, setViewMode] = useState<'live' | 'snapshot'>('live');
 
   // Announcement state
-  const [customMessage, setCustomMessage] = useState('');
-  const [customTarget, setCustomTarget] = useState<'cameras' | 'horn' | 'all'>('cameras');
-  const [customVolume, setCustomVolume] = useState(100);
   const [announcingId, setAnnouncingId] = useState<string | null>(null);
+  const [activeAlerts, setActiveAlerts] = useState<ActiveAlert[]>([]);
   const [announceResult, setAnnounceResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // Barrier state
@@ -122,6 +124,62 @@ export function CarParkLiveDetail({ siteId, onBack }: CarParkLiveDetailProps) {
   useEffect(() => {
     fetchSite();
   }, [fetchSite]);
+
+  // Fetch active alerts from SentryFlow for contextual suggestions
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      try {
+        const rulesRes = await fetch(`/api/sentryflow/rules/site/${siteId}`);
+        if (!rulesRes.ok) return;
+        
+        const rules = await rulesRes.json();
+        const alerts: ActiveAlert[] = [];
+        
+        // Check each rule's escalation state
+        for (const rule of rules) {
+          if (!rule.enabled || !rule.escalation?.enabled) continue;
+          
+          try {
+            const escRes = await fetch(`/api/sentryflow/rules/${rule.id}/escalation`);
+            if (!escRes.ok) continue;
+            
+            const escState = await escRes.json();
+            if (escState.currentLevel > 0) {
+              // Map rule to alert type
+              const ruleName = rule.name.toLowerCase();
+              let alertType: ActiveAlert['type'] = 'noise';
+              
+              if (ruleName.includes('crowd') || ruleName.includes('people')) {
+                alertType = 'crowd';
+              } else if (ruleName.includes('loiter')) {
+                alertType = 'loitering';
+              } else if (ruleName.includes('after') && ruleName.includes('hour')) {
+                alertType = 'after-hours';
+              } else if (ruleName.includes('noise') || ruleName.includes('audio')) {
+                alertType = 'noise';
+              }
+              
+              alerts.push({
+                type: alertType,
+                level: escState.currentLevel,
+                message: `${rule.name} - Level ${escState.currentLevel}`,
+              });
+            }
+          } catch {
+            // Skip this rule
+          }
+        }
+        
+        setActiveAlerts(alerts);
+      } catch {
+        // Silent fail - alerts are optional
+      }
+    };
+
+    fetchAlerts();
+    const interval = setInterval(fetchAlerts, 30000); // Check every 30s
+    return () => clearInterval(interval);
+  }, [siteId]);
 
   // Auto-refresh camera snapshots
   useEffect(() => {
@@ -397,135 +455,14 @@ export function CarParkLiveDetail({ siteId, onBack }: CarParkLiveDetailProps) {
         )}
       </section>
 
-      {/* Pre-canned Announcements */}
-      <section>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <Radio className="w-5 h-5" />
-          Quick Announcements
-        </h3>
-
-        {liveOps?.announcements && liveOps.announcements.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            {liveOps.announcements.map((announcement) => (
-              <button
-                key={announcement.id}
-                onClick={() =>
-                  triggerAnnouncement(
-                    announcement.message,
-                    announcement.target,
-                    announcement.volume,
-                    announcement.id
-                  )
-                }
-                disabled={announcingId === announcement.id}
-                className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {announcement.label}
-                  </span>
-                  {announcingId === announcement.id ? (
-                    <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-                  ) : (
-                    <Volume2 className="w-4 h-4 text-gray-400" />
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-                  {announcement.message}
-                </p>
-                <div className="mt-2 flex items-center gap-2 text-xs text-gray-400">
-                  <span className="capitalize">{announcement.target}</span>
-                  <span>•</span>
-                  <span>{announcement.volume}%</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-slate-800/50 rounded-xl">
-            No announcements configured
-          </div>
-        )}
-      </section>
-
-      {/* Custom Announcement */}
-      <section>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <Send className="w-5 h-5" />
-          Custom Announcement
-        </h3>
-
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-6">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Message
-              </label>
-              <textarea
-                value={customMessage}
-                onChange={(e) => setCustomMessage(e.target.value)}
-                placeholder="Enter your announcement message..."
-                rows={3}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Target
-                </label>
-                <div className="relative">
-                  <select
-                    value={customTarget}
-                    onChange={(e) => setCustomTarget(e.target.value as 'cameras' | 'horn' | 'all')}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none cursor-pointer"
-                  >
-                    <option value="cameras">Cameras Only</option>
-                    <option value="horn">Horn Only</option>
-                    <option value="all">All (Cameras + Horn)</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Volume: {customVolume}%
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={customVolume}
-                  onChange={(e) => setCustomVolume(Number(e.target.value))}
-                  className="w-full h-3 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-slate-700 accent-blue-500"
-                />
-              </div>
-
-              <div className="flex items-end">
-                <button
-                  onClick={() => triggerAnnouncement(customMessage, customTarget, customVolume)}
-                  disabled={!customMessage.trim() || announcingId === 'custom'}
-                  className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-slate-700 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
-                >
-                  {announcingId === 'custom' ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-5 h-5" />
-                      Announce
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Announcements - Compact Panel with Contextual Suggestions */}
+      <AnnouncementPanel
+        siteId={siteId}
+        announcements={liveOps?.announcements || []}
+        onAnnounce={triggerAnnouncement}
+        announcingId={announcingId}
+        activeAlerts={activeAlerts}
+      />
 
       {/* Site Controls (Barrier for Radisson) */}
       {liveOps?.controls?.barrier?.enabled && (
@@ -563,6 +500,12 @@ export function CarParkLiveDetail({ siteId, onBack }: CarParkLiveDetailProps) {
           </div>
         </section>
       )}
+
+      {/* Vehicle Activity Feed */}
+      <VehicleActivityPanel siteId={siteId} />
+
+      {/* SentryFlow Automation */}
+      <SentryFlowPanel siteId={siteId} />
         </>
       )}
     </div>

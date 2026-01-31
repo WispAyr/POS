@@ -9,6 +9,7 @@ import {
   Decision,
   Payment,
   Permit,
+  SiteEnforcementRule,
 } from '../domain/entities';
 import { SessionService } from './services/session.service';
 import { RuleEngineService } from './services/rule-engine.service';
@@ -26,6 +27,7 @@ import { EnforcementReevaluationService } from './services/enforcement-reevaluat
       Decision,
       Payment,
       Permit,
+      SiteEnforcementRule,
     ]),
   ],
   providers: [

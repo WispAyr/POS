@@ -94,6 +94,12 @@ export class AlarmController {
     });
   }
 
+  // Statistics - MUST be before :id route
+  @Get('stats')
+  async getStats() {
+    return this.alarmService.getAlarmStats();
+  }
+
   // Single Alarm
   @Get(':id')
   async getAlarm(@Param('id') id: string) {
@@ -151,12 +157,6 @@ export class AlarmController {
   async getUnreadCount(@Query('userId') userId?: string) {
     const count = await this.alarmService.getUnreadCount(userId);
     return { count };
-  }
-
-  // Statistics
-  @Get('stats')
-  async getStats() {
-    return this.alarmService.getAlarmStats();
   }
 
   // Scheduler info

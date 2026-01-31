@@ -8,6 +8,7 @@ import { ParkingEventsView } from './components/ParkingEventsView';
 import { SettingsView } from './components/SettingsView';
 import { PermitsView } from './components/PermitsView';
 import { AuditView } from './components/AuditView';
+import { AuditStream } from './components/AuditStream';
 import { BuildAuditView } from './components/BuildAuditView';
 import { PaymentTrackingView } from './components/PaymentTrackingView';
 import PlateReviewQueue from './components/PlateReviewQueue';
@@ -22,6 +23,9 @@ import { ScheduledNotificationDashboard } from './components/notifications/Sched
 import { CarParkLiveView } from './components/car-park-live';
 import { Sidebar, MobileNav, FullscreenButton } from './components/layout';
 import { HailoDevBar } from './components/HailoDevBar';
+import { FILOAnomalies } from './components/FILOAnomalies';
+import { EnforcementSettings } from './components/EnforcementSettings';
+import { SiteConfigAdmin } from './components/admin/SiteConfigAdmin';
 import { Sun, Moon, Search } from 'lucide-react';
 
 // View titles for the header
@@ -33,6 +37,8 @@ const VIEW_TITLES: Record<string, { title: string; subtitle: string }> = {
   sites: { title: 'Sites Management', subtitle: 'Configure and manage parking sites' },
   'plate-review': { title: 'Plate Review Queue', subtitle: 'Review plates requiring verification' },
   enforcement: { title: 'Enforcement Review', subtitle: 'Review and process PCN candidates' },
+  'filo-anomalies': { title: 'FILO Anomalies', subtitle: 'First-In-Last-Out session anomalies' },
+  'enforcement-settings': { title: 'PCN Engine Settings', subtitle: 'Manage per-site enforcement rules' },
   'pcn-export': { title: 'PCN Batch Export', subtitle: 'Export approved PCNs for processing' },
   events: { title: 'ANPR Events', subtitle: 'View all vehicle detection events' },
   'parking-events': { title: 'Parking Events Overview', subtitle: 'Complete parking session history' },
@@ -46,10 +52,18 @@ const VIEW_TITLES: Record<string, { title: string; subtitle: string }> = {
   audit: { title: 'Audit Trail', subtitle: 'System activity and change history' },
   build: { title: 'Build History & Version', subtitle: 'Deployment and version information' },
   settings: { title: 'System Settings', subtitle: 'Configure system preferences' },
+  'site-config': { title: 'Site Configuration', subtitle: 'Manage site cameras and settings' },
 };
+
+interface NavigationContext {
+  vrm?: string;
+  entityId?: string;
+  entityType?: string;
+}
 
 function App() {
   const [currentView, setCurrentView] = useState('dashboard');
+  const [navContext, setNavContext] = useState<NavigationContext | null>(null);
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') || 'light';
@@ -92,8 +106,9 @@ function App() {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  const handleNavigate = (viewId: string) => {
+  const handleNavigate = (viewId: string, context?: NavigationContext) => {
     setCurrentView(viewId);
+    setNavContext(context || null);
   };
 
   const viewInfo = VIEW_TITLES[currentView] || { title: 'Dashboard', subtitle: '' };
@@ -171,15 +186,18 @@ function App() {
 
         <div className="transition-all duration-300">
           {currentView === 'dashboard' && <DashboardStats />}
-          {currentView === 'vrm-search' && <VrmSearch />}
+          {currentView === 'vrm-search' && <VrmSearch initialVrm={navContext?.vrm} />}
           {currentView === 'sites' && <SitesList />}
           {currentView === 'plate-review' && <PlateReviewQueue />}
           {currentView === 'enforcement' && <EnforcementReview />}
+          {currentView === 'filo-anomalies' && <FILOAnomalies />}
+          {currentView === 'enforcement-settings' && <EnforcementSettings />}
           {currentView === 'pcn-export' && <PCNBatchExport />}
           {currentView === 'events' && <EventsView />}
           {currentView === 'parking-events' && <ParkingEventsView />}
           {currentView === 'permits' && <PermitsView />}
           {currentView === 'audit' && <AuditView />}
+          {currentView === 'audit-stream' && <AuditStream onNavigate={handleNavigate} />}
           {currentView === 'build' && <BuildAuditView />}
           {currentView === 'payments' && <PaymentTrackingView />}
           {currentView === 'alarms' && <AlarmDashboard />}
@@ -189,6 +207,7 @@ function App() {
           {currentView === 'system-monitor' && <SystemMonitorView />}
           {currentView === 'car-park-live' && <CarParkLiveView />}
           {currentView === 'settings' && <SettingsView />}
+          {currentView === 'site-config' && <SiteConfigAdmin />}
         </div>
       </main>
     </div>

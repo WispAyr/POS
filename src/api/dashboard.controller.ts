@@ -23,6 +23,30 @@ export class DashboardController {
     return this.siteRepo.find();
   }
 
+  @Get('sites/with-events')
+  async getSitesWithEvents() {
+    // Get distinct site IDs that have movements
+    const sitesWithMovements = await this.movementRepo
+      .createQueryBuilder('movement')
+      .select('DISTINCT movement.siteId', 'siteId')
+      .getRawMany();
+
+    const siteIds = sitesWithMovements.map((s) => s.siteId);
+
+    if (siteIds.length === 0) {
+      return [];
+    }
+
+    // Get full site details for those IDs
+    const sites = await this.siteRepo
+      .createQueryBuilder('site')
+      .where('site.id IN (:...siteIds)', { siteIds })
+      .orderBy('site.name', 'ASC')
+      .getMany();
+
+    return sites;
+  }
+
   @Get('stats')
   async getStats(@Query('siteId') siteId?: string) {
     const sessionCount = await this.sessionRepo.count({
@@ -54,11 +78,13 @@ export class DashboardController {
     @Query('limit') limit = '20',
     @Query('vrm') vrm?: string,
     @Query('hideUnknown') hideUnknown?: string,
+    @Query('showDiscarded') showDiscarded?: string,
   ) {
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
     const skip = (pageNum - 1) * limitNum;
     const shouldHideUnknown = hideUnknown === 'true';
+    const shouldShowDiscarded = showDiscarded === 'true';
 
     // Build query with filters
     const queryBuilder = this.movementRepo
@@ -72,6 +98,11 @@ export class DashboardController {
         'movement.direction',
         'movement.images',
         'movement.ingestedAt',
+        'movement.discarded',
+        'movement.hailoValidated',
+        'movement.hailoVehicleCount',
+        'movement.hailoConfidence',
+        'movement.hailoResult',
       ])
       .orderBy('movement.timestamp', 'DESC');
 
@@ -85,6 +116,11 @@ export class DashboardController {
 
     if (shouldHideUnknown) {
       queryBuilder.andWhere('movement.vrm != :unknown', { unknown: 'UNKNOWN' });
+    }
+
+    // By default, hide discarded movements unless explicitly requested
+    if (!shouldShowDiscarded) {
+      queryBuilder.andWhere('(movement.discarded = false OR movement.discarded IS NULL)');
     }
 
     const [data, total] = await queryBuilder

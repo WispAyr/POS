@@ -8,6 +8,7 @@ import { AuditService } from '../../audit/audit.service';
 import { PlateValidationService } from '../../plate-review/services/plate-validation.service';
 import { PlateReviewService } from '../../plate-review/services/plate-review.service';
 import { ValidationStatus } from '../../domain/entities/plate-review.entity';
+import { HailoValidationService } from '../../services/hailo-validation.service';
 
 @Injectable()
 export class AnprIngestionService {
@@ -22,6 +23,7 @@ export class AnprIngestionService {
     private readonly auditService: AuditService,
     private readonly plateValidationService: PlateValidationService,
     private readonly plateReviewService: PlateReviewService,
+    private readonly hailoValidationService: HailoValidationService,
   ) {}
 
   async ingest(
@@ -142,6 +144,14 @@ export class AnprIngestionService {
 
     // Audit log movement ingestion (isNew = true since we just created it)
     const ingestionAuditLog = await this.auditService.logMovementIngestion(saved, true, undefined);
+
+    // Hailo vehicle validation (async, non-blocking)
+    // This will flag the movement for review if no vehicle is detected
+    this.hailoValidationService.validateMovement(saved).catch((err) => {
+      this.logger.error(
+        `Hailo validation failed for movement ${saved.id}: ${err.message}`,
+      );
+    });
 
     // If plate is suspicious, create a review entry
     if (suspicionResult.isSuspicious) {

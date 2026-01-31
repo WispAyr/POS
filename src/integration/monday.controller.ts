@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get } from '@nestjs/common';
 import { MondayIntegrationService } from './monday-integration.service';
 
 @Controller('integration/monday')
@@ -9,6 +9,15 @@ export class MondayController {
   async triggerSync() {
     await this.mondayService.syncAll();
     return { message: 'Full sync triggered successfully' };
+  }
+
+  /**
+   * Alias for frontend admin UI
+   */
+  @Post('sync-sites')
+  async syncSites() {
+    await this.mondayService.syncAll();
+    return { message: 'Sites synced from Monday.com', updated: true };
   }
 
   @Post('permits/sync')
