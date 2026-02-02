@@ -130,8 +130,8 @@ export class PlateValidationService {
     const reasons: string[] = [];
     const validationResult = await this.validatePlate(vrm);
 
-    // Check confidence score
-    if (confidence !== undefined && confidence < 0.8) {
+    // Check confidence score (guard against null AND undefined)
+    if (confidence != null && confidence < 0.8) {
       reasons.push(`LOW_CONFIDENCE:${confidence.toFixed(2)}`);
     }
 
